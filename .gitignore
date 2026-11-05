@@ -9,6 +9,7 @@ node_modules/
 .env.development
 .env.test
 .env.production
+!.env.example
 *.pem
 *.key
 *.cert
@@ -31,6 +32,7 @@ out/
 bin/
 obj/
 target/
+*.tsbuildinfo
 
 # Logs and runtime
 logs/
