@@ -1063,19 +1063,69 @@ export const DEMO_BILL_PAYMENTS: BillPaymentItem[] = [
 ];
 
 export const DEMO_AI_SUGGESTED_QUESTIONS = [
+  'Analyze my spending this month.',
+  'Which budget needs attention?',
+  'What bills are due soon?',
+  'How can I save more money?',
+  'Can I afford a vacation?',
+  'How can I reach my savings goal faster?',
   'How much can I safely save this month?',
-  'Analyze my dining & groceries spending',
   'What is my runway if income drops 15%?',
-  'Am I on track for my Home Down Payment goal?',
 ];
 
 export const DEMO_AI_PRECOMPUTED_ANSWERS: Record<string, string> = {
+  'Analyze my spending this month.':
+    'Your total recorded expenses this month stand at **$4,830.25** against total income of **$9,450.00**, delivering a healthy **48.9% savings rate**.\n\n### Top Expense Categories:\n- **Housing & Mortgage**: $2,450.00 (50.7%)\n- **Food & Dining**: $890.00 (18.4%)\n- **Technology & Subscriptions**: $340.00 (7.0%)\n- **Transportation**: $280.00 (5.8%)\n\nYour net surplus of **+$4,619.75** provides substantial headroom for savings and debt-free investment.',
+  'Which budget needs attention?':
+    'Your **Food & Dining** budget requires vigilance. You have spent **$890.00 of your $1,100.00 allocation (80.9% utilization)** with 15 days remaining in the cycle.\n\nAt your current burn rate of ~$59/day, you will exceed your ceiling by approximately $85 unless daily discretionary dining is kept under $14/day for the remainder of the month.',
+  'What bills are due soon?':
+    'You have **3 upcoming recurring payments** totaling **$380.00** due in the next 14 days:\n\n1. **AWS Cloud Hosting**: $145.00 due on Nov 12 (Scheduled Auto-Pay)\n2. **Clean Power Electric**: $180.00 due on Nov 15\n3. **Github Copilot Pro**: $55.00 due on Nov 18\n\nYou currently have zero overdue bills and sufficient checking account liquidity to cover all commitments automatically.',
+  'How can I save more money?':
+    'Based on your spending patterns, here are 3 high-impact optimizations:\n\n1. **Subscription Consolidation**: You have 6 active SaaS/streaming recurring services totaling $149/month. Canceling 2 underutilized services frees up ~$45/mo ($540/year).\n2. **Dining Cap**: Shifting 2 weekend meals to home cooking recovers ~$220/month.\n3. **Automate Pay-Yourself-First**: Transferring $500 to your High-Yield Savings account immediately upon salary deposit ensures consistent compounding.',
+  'Can I afford a vacation?':
+    'Yes, with proper allocation! Your **Alps Summer Expedition** savings goal is already **86.7% funded ($3,900 of $4,500 target)** with only $600 remaining.\n\nWith your monthly net cash flow of +$4,619.75, you could fully fund the remaining $600 this month without disturbing your emergency fund or delaying your Home Down Payment timeline.',
+  'How can I reach my savings goal faster?':
+    'To accelerate your **Home Down Payment** goal ($32,000 / $60,000 saved):\n\n- Currently, you contribute **$1,200/month**, projecting completion in **23 months**.\n- Increasing your monthly allocation to **$1,800/month** (using 39% of your monthly cash flow surplus) achieves your target in **15.5 months**, shaving **7.5 months** off your timeline.\n- Reallocating the $600 from your fully funded Alps trip accelerates this transition immediately.',
   'How much can I safely save this month?':
     'Based on your monthly income of $9,450.00 and average recurring expenses of $4,830.25, you have $4,619.75 in projected net cash flow. After allocating $1,500 across your active goals (Emergency Fund and Down Payment), you can safely allocate **$3,119.75** directly to discretionary savings or index fund investments.',
-  'Analyze my dining & groceries spending':
-    'Your dining and food expenditures currently total **$890.00** this month (18.4% of total expenses), which is 8% lower than your 3-month trailing average of $968. You have $210.00 remaining in your $1,100 dining budget, putting you in an optimal savings trajectory.',
   'What is my runway if income drops 15%?':
     'With your current liquid reserves of **$54,820.50** and essential monthly burn rate of ~$3,950, your baseline runway is **13.8 months**. A 15% decrease in income reduces monthly net cash flow from +$4,620 to +$3,200, which means your cash reserve remains non-depleting without dipping into principal.',
-  'Am I on track for my Home Down Payment goal?':
-    'Yes! You have reached **$32,000 of your $60,000 target** (53.3% completion). At your current contribution velocity of $1,200/month, you are projected to reach $60,000 by May 2028, 4 months ahead of your Q3 2027 milestone.',
 };
+
+export const DEMO_FINANCIAL_INSIGHTS = {
+  healthScore: {
+    score: 92,
+    rating: 'Excellent' as const,
+    breakdown: {
+      savingsRateScore: { score: 30, max: 30, note: 'Outstanding savings rate of 48.9% exceeds benchmark.' },
+      budgetUtilizationScore: { score: 22, max: 25, note: 'Overall budget utilization at 72.4%; dining approaching ceiling.' },
+      billTimelinessScore: { score: 25, max: 25, note: 'Zero overdue obligations across 7 active bills.' },
+      goalProgressScore: { score: 15, max: 20, note: 'Four active goals with steady monthly funding velocity.' },
+    },
+    summary: 'Your overall financial health index is 92/100 (Excellent), driven by strong 48.9% savings rate and zero overdue bills.',
+  },
+  topSpendingCategory: { category: 'Housing & Rent', amount: 2450, percentage: 50.7 },
+  lowestSpendingCategory: { category: 'Transportation', amount: 280 },
+  budgetAlerts: {
+    exceededCount: 0,
+    warningCount: 1,
+    criticalCategories: ['Food & Dining'],
+  },
+  savingsTrajectory: {
+    totalTarget: 99500,
+    totalSaved: 59300,
+    progressPercentage: 59.6,
+    monthlyRequired: 1677,
+  },
+  billCommitments: {
+    monthlyRecurring: 685,
+    overdueCount: 0,
+    overdueAmount: 0,
+    nextDueBill: {
+      name: 'AWS Cloud Hosting',
+      amount: 145,
+      dueDate: '2026-11-12',
+    },
+  },
+};
+

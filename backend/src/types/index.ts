@@ -464,3 +464,157 @@ export interface BillAnalyticsData {
   nextDueDate?: string;
   recurringEstimateAnnual: number;
 }
+
+export interface AIMessageItem {
+  role: 'user' | 'assistant';
+  content: string;
+  createdAt: string;
+}
+
+export interface AIConversationResponse {
+  id: string;
+  userId: string;
+  title: string;
+  messages: AIMessageItem[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AIConversationSummary {
+  id: string;
+  title: string;
+  messageCount: number;
+  lastMessageSnippet?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface FinancialContextData {
+  timestamp: string;
+  currency: string;
+  hasTransactions: boolean;
+  hasBudgets: boolean;
+  hasSavingsGoals: boolean;
+  hasBills: boolean;
+  summary: {
+    totalIncome: number;
+    totalExpense: number;
+    netCashFlow: number;
+    savingsRatePercentage: number;
+    totalBudgetLimit: number;
+    totalBudgetSpent: number;
+    overallBudgetUtilization: number;
+    totalSavingsTarget: number;
+    totalSavingsSaved: number;
+    overallSavingsProgress: number;
+    totalMonthlyBills: number;
+    overdueBillsCount: number;
+    overdueBillsAmount: number;
+    upcoming30DaysBillsAmount: number;
+  };
+  topExpenseCategories: {
+    category: string;
+    amount: number;
+    percentage: number;
+  }[];
+  recentTransactions: {
+    title: string;
+    amount: number;
+    type: 'income' | 'expense';
+    category: string;
+    date: string;
+  }[];
+  activeBudgets: {
+    name: string;
+    category: string;
+    limit: number;
+    spent: number;
+    remaining: number;
+    utilizationPercentage: number;
+    status: 'healthy' | 'warning' | 'critical' | 'exceeded';
+  }[];
+  activeGoals: {
+    name: string;
+    targetAmount: number;
+    currentAmount: number;
+    progressPercentage: number;
+    targetDate?: string;
+    monthlyRequired: number;
+  }[];
+  upcomingBills: {
+    name: string;
+    amount: number;
+    dueDate: string;
+    frequency: string;
+    status: string;
+    isOverdue: boolean;
+  }[];
+}
+
+export interface FinancialHealthScoreItem {
+  score: number;
+  rating: 'Excellent' | 'Good' | 'Fair' | 'Needs Attention';
+  breakdown: {
+    savingsRateScore: { score: number; max: number; note: string };
+    budgetUtilizationScore: { score: number; max: number; note: string };
+    billTimelinessScore: { score: number; max: number; note: string };
+    goalProgressScore: { score: number; max: number; note: string };
+  };
+  summary: string;
+}
+
+export interface FinancialInsightsResponse {
+  healthScore: FinancialHealthScoreItem;
+  topSpendingCategory: {
+    category: string;
+    amount: number;
+    percentage: number;
+  } | null;
+  lowestSpendingCategory: {
+    category: string;
+    amount: number;
+  } | null;
+  budgetAlerts: {
+    exceededCount: number;
+    warningCount: number;
+    criticalCategories: string[];
+  };
+  savingsTrajectory: {
+    totalTarget: number;
+    totalSaved: number;
+    progressPercentage: number;
+    monthlyRequired: number;
+  };
+  billCommitments: {
+    monthlyRecurring: number;
+    overdueCount: number;
+    overdueAmount: number;
+    nextDueBill?: {
+      name: string;
+      amount: number;
+      dueDate: string;
+    };
+  };
+}
+
+export interface FinancialContextStatusResponse {
+  hasTransactions: boolean;
+  transactionCount: number;
+  hasBudgets: boolean;
+  budgetCount: number;
+  hasSavingsGoals: boolean;
+  savingsGoalCount: number;
+  hasBills: boolean;
+  billCount: number;
+  currency: string;
+  lastUpdated: string;
+}
+
+export interface AIChatResponseData {
+  conversationId: string;
+  message: AIMessageItem;
+  title: string;
+  model: string;
+  isSimulated?: boolean;
+}
+

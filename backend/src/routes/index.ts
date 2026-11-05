@@ -5,6 +5,7 @@ import transactionRouter from './transaction.route.js';
 import budgetRouter from './budget.route.js';
 import savingsRouter from './savings.route.js';
 import billRouter from './bill.route.js';
+import aiRouter from './ai.route.js';
 
 const router = Router();
 
@@ -70,6 +71,15 @@ router.get('/', (_req: Request, res: Response) => {
         revertPayment: 'DELETE /api/bills/:id/payments/:paymentId',
         analytics: 'GET /api/bills/:id/analytics',
       },
+      ai: {
+        chat: 'POST /api/ai/chat',
+        insights: 'GET /api/ai/insights',
+        context: 'GET /api/ai/context',
+        conversations: 'GET /api/ai/conversations',
+        clearConversations: 'DELETE /api/ai/conversations',
+        getConversation: 'GET /api/ai/conversations/:id',
+        deleteConversation: 'DELETE /api/ai/conversations/:id',
+      },
     },
   });
 });
@@ -81,5 +91,6 @@ router.use('/transactions', transactionRouter);
 router.use('/budgets', budgetRouter);
 router.use('/savings-goals', savingsRouter);
 router.use('/bills', billRouter);
+router.use('/ai', aiRouter);
 
 export default router;

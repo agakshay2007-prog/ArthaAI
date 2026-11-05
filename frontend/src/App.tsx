@@ -914,7 +914,7 @@ const MainDashboardLayout: React.FC = () => {
           />
         );
       case 'ai-assistant':
-        return <AIAssistantView />;
+        return <AIAssistantView isGuestDemo={isGuestMode} />;
       case 'reports':
         return <ReportsAnalyticsView />;
       case 'settings':

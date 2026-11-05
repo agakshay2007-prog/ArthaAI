@@ -19,6 +19,10 @@ export interface AppConfig {
   COOKIE_NAME: string;
   COOKIE_MAX_AGE_MS: number;
   BCRYPT_SALT_ROUNDS: number;
+  GEMINI_API_KEY: string;
+  GEMINI_MODEL: string;
+  AI_MAX_OUTPUT_TOKENS: number;
+  AI_TEMPERATURE: number;
 }
 
 const parseEnvironment = (envStr?: string): Environment => {
@@ -64,6 +68,29 @@ const parseJwtSecret = (secret?: string, nodeEnv?: Environment): string => {
   return 'artha-ai-dev-jwt-insecure-secret-key-replace-in-production-32chars';
 };
 
+const parseGeminiModel = (modelStr?: string): string => {
+  if (modelStr && modelStr.trim().length > 0) {
+    return modelStr.trim();
+  }
+  return 'gemini-2.5-flash';
+};
+
+const parseOutputTokens = (tokensStr?: string): number => {
+  const parsed = parseInt(tokensStr || '1500', 10);
+  if (isNaN(parsed) || parsed < 100 || parsed > 8192) {
+    return 1500;
+  }
+  return parsed;
+};
+
+const parseTemperature = (tempStr?: string): number => {
+  const parsed = parseFloat(tempStr || '0.3');
+  if (isNaN(parsed) || parsed < 0 || parsed > 2.0) {
+    return 0.3;
+  }
+  return parsed;
+};
+
 const rawClientOrigin = process.env.CLIENT_ORIGIN || 'http://localhost:5173';
 const allowedOrigins = rawClientOrigin
   .split(',')
@@ -85,4 +112,8 @@ export const env: AppConfig = {
   COOKIE_NAME: 'artha_auth_token',
   COOKIE_MAX_AGE_MS: 7 * 24 * 60 * 60 * 1000, // 7 days
   BCRYPT_SALT_ROUNDS: 10,
+  GEMINI_API_KEY: process.env.GEMINI_API_KEY ? process.env.GEMINI_API_KEY.trim() : '',
+  GEMINI_MODEL: parseGeminiModel(process.env.GEMINI_MODEL),
+  AI_MAX_OUTPUT_TOKENS: parseOutputTokens(process.env.AI_MAX_OUTPUT_TOKENS),
+  AI_TEMPERATURE: parseTemperature(process.env.AI_TEMPERATURE),
 };

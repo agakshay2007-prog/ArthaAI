@@ -8,6 +8,7 @@ ArthaAI is an enterprise-grade full-stack personal finance and autonomous intell
 - **Phase 5: Complete Budget Management System & Predictive Velocity Analytics**
 - **Phase 6: Complete Savings Goals & Financial Planning Engine**
 - **Phase 7: Bills, Payments & Recurring Expenses Management Engine**
+- **Phase 8: AI Financial Assistant & Gemini Intelligence Engine**
 
 ---
 
@@ -23,6 +24,7 @@ ArthaAI/
 │   │   │   ├── database.ts         # Mongoose connection manager & health hooks
 │   │   │   └── env.ts              # Strongly-typed environment schema & validation
 │   │   ├── controllers/            # Route controllers
+│   │   │   ├── ai.controller.ts    # AI chat, conversation history & financial insights
 │   │   │   ├── auth.controller.ts  # Registration, login, logout, profile & password
 │   │   │   ├── bill.controller.ts  # Bills CRUD, payments, reminders & analytics
 │   │   │   ├── budget.controller.ts# Budget CRUD, overview, history & velocity analytics
@@ -33,8 +35,9 @@ ArthaAI/
 │   │   │   ├── auth.middleware.ts  # HttpOnly cookie & Bearer JWT authentication guard
 │   │   │   ├── errorHandler.ts     # Centralized error sanitizer & response pipeline
 │   │   │   ├── notFoundHandler.ts  # Standardized 404 handler
-│   │   │   └── rateLimit.middleware.ts # IP rate limiter for sensitive auth routes
+│   │   │   └── rateLimit.middleware.ts # IP rate limiter for auth and AI chat routes
 │   │   ├── models/                 # Mongoose schemas & data models
+│   │   │   ├── ai-conversation.model.ts # AI conversation & message history model
 │   │   │   ├── bill.model.ts       # Bill model with recurrence rules & minor units
 │   │   │   ├── bill-payment.model.ts # Bill payment sub-ledger model
 │   │   │   ├── budget.model.ts     # Budget model with integer minor units & threshold validation
@@ -43,6 +46,7 @@ ArthaAI/
 │   │   │   ├── transaction.model.ts# Transaction model with integer minor units (paise/cents)
 │   │   │   └── user.model.ts       # User model with bcrypt hashing & JSON sanitization
 │   │   ├── routes/                 # Express API routes
+│   │   │   ├── ai.route.ts         # /api/ai chat, conversation & insights endpoints
 │   │   │   ├── auth.route.ts       # /api/auth authentication endpoints
 │   │   │   ├── bill.route.ts       # /api/bills bills & recurring payments endpoints
 │   │   │   ├── budget.route.ts     # /api/budgets budget endpoints
@@ -51,6 +55,11 @@ ArthaAI/
 │   │   │   ├── savings.route.ts    # /api/savings-goals endpoints
 │   │   │   └── transaction.route.ts# /api/transactions financial ledger endpoints
 │   │   ├── services/               # Core computational services
+│   │   │   ├── ai/                 # Gemini integration & prompt services
+│   │   │   │   ├── financial-context.service.ts # Aggregates ledger context for authenticated user
+│   │   │   │   ├── financial-insights.service.ts# Deterministic calculation of health score & metrics
+│   │   │   │   ├── gemini.service.ts            # Official Google Gen AI SDK client & error sanitizer
+│   │   │   │   └── prompt-builder.service.ts    # System instructions, guardrails & injection defense
 │   │   │   ├── bill.service.ts     # Recurrence schedules, reminders & payment ledger
 │   │   │   ├── budget.service.ts   # Dynamic transaction aggregation, thresholds & forecasting
 │   │   │   └── savings.service.ts  # Goal enrichment, milestones, velocity & recommendations
@@ -61,9 +70,12 @@ ArthaAI/
 │   │   │   ├── apiResponse.ts      # Standardized API response builder
 │   │   │   ├── asyncHandler.ts     # Async Promise-exception wrapper
 │   │   │   └── token.ts            # JWT signing, verification & cookie management
+│   │   ├── validators/             # Request payload validators
+│   │   │   └── ai.validator.ts     # Chat message & pagination validation
 │   │   ├── app.ts                  # Express application setup, security stack & cookies
 │   │   └── server.ts               # HTTP server bootstrap & graceful shutdown hooks
-│   ├── tests/                      # Automated test suites (109 tests passing)
+│   ├── tests/                      # Automated test suites (138 tests passing)
+│   │   ├── ai.test.ts              # 29 automated tests covering Gemini mocks, health math & routes
 │   │   ├── auth.test.ts            # 16 automated tests covering auth, JWT, bcrypt & DB degradation
 │   │   ├── bills.test.ts           # 31 automated tests covering recurrence math, payments & routes
 │   │   ├── budgets.test.ts         # 21 automated tests covering budget models, math & routes
@@ -350,7 +362,7 @@ VITE_API_BASE_URL=http://localhost:5000
 
 ## 🚀 Execution & Testing
 
-### 1. Run Automated Unit & Integration Tests (109 Tests Passing)
+### 1. Run Automated Unit & Integration Tests (138 Tests Passing)
 ```bash
 npm test
 # or
@@ -362,8 +374,36 @@ The test suite validates:
 - **Budgets (21 tests)**: Minor-unit schema validation, negative limit rejection, invalid period/date rejection, dynamic utilization levels, alert deduplication, unauthenticated 401s, unconfigured MongoDB 503s.
 - **Savings Goals (23 tests)**: Goal schema validation, integer minor units conversion, negative target rejection, date ordering, sub-ledger contributions, goal enrichment, milestone calculations, unauthenticated 401s, unconfigured MongoDB 503s.
 - **Bills & Recurring Payments (31 tests)**: Bill schema validation, integer minor units, recurrence schedule calculations (weekly, monthly, quarterly, yearly, Jan 31 month-end clamp, leap-year Feb 29 clamp), payment ledger, reminder engine (overdue, due today, 1d, 3d, 7d), unauthenticated 401s, unconfigured MongoDB 503s.
+- **AI Financial Assistant & Gemini Engine (29 tests)**: AI conversation schema validation, role & message length boundaries, deterministic financial health index (0-100), transparent scoring breakdown, prompt injection sanitization, read-only safety guardrails, Gemini SDK error sanitization (timeouts, 429 rate limits, 404 models), 401 unauthenticated guards, 503 unconfigured DB degradation, and conversation ownership security.
 
-### 2. Production Build Verification
+### 2. Google Gemini API Setup & Configuration
+To enable live AI assistant responses with Google's official Gemini API:
+1. Obtain an API key from [Google AI Studio](https://aistudio.google.com/).
+2. Add your credentials to `backend/.env`:
+   ```env
+   GEMINI_API_KEY=AIzaSy...your_actual_key
+   GEMINI_MODEL=gemini-2.5-flash
+   AI_MAX_OUTPUT_TOKENS=1500
+   AI_TEMPERATURE=0.3
+   ```
+3. Restart the backend server. The AI Copilot will automatically transition from simulation standby to live Gemini intelligence.
+
+---
+
+### 3. AI Endpoints Table
+| Method | Endpoint | Description | Auth Required |
+| :--- | :--- | :--- | :--- |
+| `POST` | `/api/ai/chat` | Send financial inquiry grounded in user context | Yes (Rate limited) |
+| `GET` | `/api/ai/insights` | Retrieve calculated health score & spending metrics | Yes |
+| `GET` | `/api/ai/context` | Safe status of available user financial modules | Yes |
+| `GET` | `/api/ai/conversations` | Paginated list of user conversation summaries | Yes |
+| `GET` | `/api/ai/conversations/:id` | Get full message history for conversation | Yes |
+| `DELETE`| `/api/ai/conversations/:id` | Delete specific conversation | Yes |
+| `DELETE`| `/api/ai/conversations` | Clear all AI conversation history for user | Yes |
+
+---
+
+### 4. Production Build Verification
 ```bash
 npm run build
 ```
@@ -389,8 +429,12 @@ npm run dev:frontend
 - [x] Deleting or archiving a bill leaves historical financial bank transaction records completely intact.
 - [x] Duplicate linking of transactions to multiple bill payments is rejected via unique indexing and ownership checks.
 - [x] Sub-ledger payments maintain historical chronological integrity with safe deletion & rollback.
-- [x] Sensitive authentication routes protected by IP rate limiting (15 req / 15 min).
+- [x] GEMINI_API_KEY is strictly secured on backend; never exposed to browser or frontend client code.
+- [x] AI Assistant operates strictly as a READ-ONLY advisor — execution of bank transfers, transaction deletion, or account changes is strictly prevented.
+- [x] Prompt injection defenses sanitize untrusted inputs (transaction titles, notes, merchant names, bill names).
+- [x] Clearing AI conversations strictly deletes chat history documents and never touches financial transactions, budgets, or bills.
+- [x] Sensitive authentication and AI chat routes protected by IP rate limiters.
 - [x] HttpOnly, SameSite cookies prevent credential access from browser JavaScript.
 - [x] CSV export generated safely from authorized records only.
-- [x] 100% test pass rate across 109 automated unit and integration tests.
+- [x] 100% test pass rate across 138 automated unit and integration tests.
 - [x] Zero secrets, tokens, or credentials stored in repository or frontend code.
