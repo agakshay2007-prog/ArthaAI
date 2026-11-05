@@ -8,11 +8,11 @@ export class ReportExportService {
    */
   public static sanitizeFormulaInjection(value: unknown): string {
     if (value === null || value === undefined) return '';
-    const str = String(value).trim();
-    if (/^[=+\-@\t\r]/.test(str)) {
-      return `'${str}`;
+    const rawStr = String(value);
+    if (/^[=+\-@\t\r]/.test(rawStr) || /^\s*[=+\-@]/.test(rawStr)) {
+      return `'${rawStr}`;
     }
-    return str;
+    return rawStr.trim();
   }
 
   /**
@@ -554,3 +554,4 @@ export class ReportExportService {
     });
   }
 }
+

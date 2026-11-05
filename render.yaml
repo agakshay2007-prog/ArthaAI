@@ -1,0 +1,32 @@
+services:
+  - type: web
+    name: artha-ai-backend
+    env: node
+    plan: free
+    region: oregon
+    rootDir: .
+    buildCommand: npm --prefix backend install && npm --prefix backend run build
+    startCommand: node backend/dist/server.js
+    healthCheckPath: /api/health/live
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: API_PREFIX
+        value: /api
+      - key: JWT_EXPIRES_IN
+        value: 7d
+      - key: GEMINI_MODEL
+        value: gemini-2.5-flash
+      - key: AI_MAX_OUTPUT_TOKENS
+        value: 1500
+      - key: AI_TEMPERATURE
+        value: 0.3
+      - key: JWT_SECRET
+        generateValue: true
+      - key: MONGODB_URI
+        sync: false
+      - key: CLIENT_ORIGIN
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false

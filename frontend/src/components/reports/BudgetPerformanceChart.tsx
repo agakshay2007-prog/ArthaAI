@@ -159,3 +159,4 @@ export const BudgetPerformanceChart: React.FC<BudgetPerformanceChartProps> = ({ 
     </div>
   );
 };
+

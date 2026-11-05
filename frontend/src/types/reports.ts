@@ -133,3 +133,4 @@ export interface AIReportInsightsResponse {
   reportLabel: string;
   generatedAt: string;
 }
+

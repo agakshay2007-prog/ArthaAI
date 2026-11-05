@@ -31,3 +31,4 @@ router.get('/export/excel', asyncHandler(ReportController.exportExcel));
 router.get('/export/csv', asyncHandler(ReportController.exportCsv));
 
 export default router;
+

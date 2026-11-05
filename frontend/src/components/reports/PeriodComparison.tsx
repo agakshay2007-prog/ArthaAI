@@ -144,3 +144,4 @@ export const PeriodComparison: React.FC<PeriodComparisonProps> = ({
     </div>
   );
 };
+

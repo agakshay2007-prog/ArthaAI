@@ -102,7 +102,7 @@ const currentEnv = parseEnvironment(process.env.NODE_ENV);
 export const env: AppConfig = {
   NODE_ENV: currentEnv,
   PORT: parsePort(process.env.PORT),
-  MONGODB_URI: parseMongoUri(process.env.MONGODB_URI),
+  MONGODB_URI: parseMongoUri(process.env.MONGODB_URI || process.env.DATABASE_URL),
   CLIENT_ORIGIN: rawClientOrigin,
   ALLOWED_ORIGINS: allowedOrigins.length > 0 ? allowedOrigins : ['http://localhost:5173'],
   API_PREFIX: process.env.API_PREFIX || '/api',

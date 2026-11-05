@@ -83,3 +83,4 @@ export const CashFlowChart: React.FC<CashFlowChartProps> = ({ data, isLoading = 
     </div>
   );
 };
+

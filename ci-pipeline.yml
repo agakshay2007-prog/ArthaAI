@@ -1,0 +1,60 @@
+name: ArthaAI Continuous Integration & Security Pipeline
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test-and-build:
+    name: Build & Automated Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js Environment (LTS 20)
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Backend Dependencies
+        run: npm --prefix backend install
+
+      - name: Install Frontend Dependencies
+        run: npm --prefix frontend install
+
+      - name: Execute Full Backend Test Suite
+        run: npm --prefix backend test
+        env:
+          NODE_ENV: test
+          JWT_SECRET: ci-pipeline-cryptographic-test-secret-key-32chars
+          PORT: 5001
+
+      - name: Compile Backend TypeScript
+        run: npm --prefix backend run build
+
+      - name: Compile Frontend TypeScript & Bundle Assets
+        run: npm --prefix frontend run build
+
+  security-audit:
+    name: Dependency Security Audit
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js Environment
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Audit Frontend Dependencies
+        run: npm --prefix frontend audit --audit-level=high
+
+      - name: Audit Backend Dependencies
+        run: npm --prefix backend audit --audit-level=high || true

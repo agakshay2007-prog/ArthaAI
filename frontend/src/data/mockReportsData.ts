@@ -282,3 +282,4 @@ export function getDemoFinancialReport(preset: ReportFilterPreset = 'this_month'
       'Executive Financial Evaluation: Cash-flow generation remains stable with strong positive operational surplus across this reporting interval. Operational burn rate is disciplined across core overheads, with discretionary spend contained under established budgetary limits. Allocation toward high-yield savings assets meets your target threshold.',
   };
 }
+

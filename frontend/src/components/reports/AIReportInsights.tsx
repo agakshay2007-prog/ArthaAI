@@ -171,3 +171,4 @@ export const AIReportInsights: React.FC<AIReportInsightsProps> = ({
     </div>
   );
 };
+

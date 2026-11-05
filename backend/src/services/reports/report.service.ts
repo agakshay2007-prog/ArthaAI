@@ -254,3 +254,4 @@ ${report.categories.slice(0, 5).map((cat) => `- ${cat.category}: $${cat.amount.t
     }
   }
 }
+

@@ -187,3 +187,4 @@ export const CategoryBreakdownChart: React.FC<CategoryBreakdownChartProps> = ({ 
     </div>
   );
 };
+

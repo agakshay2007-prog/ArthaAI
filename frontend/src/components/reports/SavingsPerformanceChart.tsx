@@ -142,3 +142,4 @@ export const SavingsPerformanceChart: React.FC<SavingsPerformanceChartProps> = (
     </div>
   );
 };
+
