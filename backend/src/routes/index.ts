@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import healthRouter from './health.route.js';
 import authRouter from './auth.route.js';
+import transactionRouter from './transaction.route.js';
 
 const router = Router();
 
@@ -22,6 +23,15 @@ router.get('/', (_req: Request, res: Response) => {
         profile: 'PATCH /api/auth/profile',
         changePassword: 'PATCH /api/auth/change-password',
       },
+      transactions: {
+        list: 'GET /api/transactions',
+        create: 'POST /api/transactions',
+        getById: 'GET /api/transactions/:id',
+        update: 'PATCH /api/transactions/:id',
+        delete: 'DELETE /api/transactions/:id',
+        summary: 'GET /api/transactions/summary',
+        categories: 'GET /api/transactions/categories',
+      },
     },
   });
 });
@@ -29,5 +39,6 @@ router.get('/', (_req: Request, res: Response) => {
 // Mount routes
 router.use('/health', healthRouter);
 router.use('/auth', authRouter);
+router.use('/transactions', transactionRouter);
 
 export default router;

@@ -19,11 +19,13 @@ import { DEMO_TRANSACTIONS } from '../../data/mockFinanceData';
 interface RecentTransactionsCardProps {
   transactions?: Transaction[];
   onViewAll?: () => void;
+  isLive?: boolean;
 }
 
 export const RecentTransactionsCard: React.FC<RecentTransactionsCardProps> = ({
   transactions = DEMO_TRANSACTIONS,
   onViewAll,
+  isLive = false,
 }) => {
   const [filterType, setFilterType] = useState<'all' | 'income' | 'expense'>('all');
   const [cardSearch, setCardSearch] = useState('');
@@ -54,7 +56,7 @@ export const RecentTransactionsCard: React.FC<RecentTransactionsCardProps> = ({
     const matchesSearch =
       cardSearch === '' ||
       tx.title.toLowerCase().includes(cardSearch.toLowerCase()) ||
-      tx.category.toLowerCase().includes(cardSearch.toLowerCase()) ||
+      (tx.category && tx.category.toLowerCase().includes(cardSearch.toLowerCase())) ||
       (tx.merchant && tx.merchant.toLowerCase().includes(cardSearch.toLowerCase()));
     return matchesType && matchesSearch;
   });
@@ -70,7 +72,9 @@ export const RecentTransactionsCard: React.FC<RecentTransactionsCardProps> = ({
             </div>
             <div>
               <h3 className="font-bold text-base text-white">Recent Transactions</h3>
-              <p className="text-[11px] text-slate-400">Live ledger demo records</p>
+              <p className="text-[11px] text-slate-400">
+                {isLive ? 'Live database records' : 'Demonstration ledger'}
+              </p>
             </div>
           </div>
 
@@ -121,7 +125,7 @@ export const RecentTransactionsCard: React.FC<RecentTransactionsCardProps> = ({
         <div className="divide-y divide-slate-800/60 max-h-[360px] overflow-y-auto">
           {filtered.length === 0 ? (
             <div className="py-8 text-center text-xs text-slate-400">
-              No transactions found matching criteria.
+              {transactions.length === 0 ? 'No transactions recorded yet.' : 'No transactions match criteria.'}
             </div>
           ) : (
             filtered.slice(0, 6).map((tx) => {
@@ -141,7 +145,9 @@ export const RecentTransactionsCard: React.FC<RecentTransactionsCardProps> = ({
                       <Icon className="w-4 h-4" />
                     </div>
                     <div className="truncate">
-                      <div className="text-xs font-semibold text-white truncate">{tx.title}</div>
+                      <div className="text-xs font-semibold text-white truncate flex items-center gap-1.5">
+                        <span>{tx.title}</span>
+                      </div>
                       <div className="text-[11px] text-slate-400 flex items-center space-x-2">
                         <span>{tx.category}</span>
                         <span>•</span>
@@ -167,7 +173,7 @@ export const RecentTransactionsCard: React.FC<RecentTransactionsCardProps> = ({
                         </>
                       )}
                     </div>
-                    <div className="text-[10px] text-slate-500">{tx.account.split(' ')[0]}</div>
+                    <div className="text-[10px] text-slate-500">{tx.account ? tx.account.split(' ')[0] : 'Checking'}</div>
                   </div>
                 </div>
               );
@@ -177,7 +183,9 @@ export const RecentTransactionsCard: React.FC<RecentTransactionsCardProps> = ({
       </div>
 
       <div className="mt-4 pt-3 border-t border-slate-800/80 flex items-center justify-between text-xs">
-        <span className="text-slate-500 text-[11px]">Showing top recent ledger entries</span>
+        <span className="text-slate-500 text-[11px]">
+          {isLive ? 'Database-backed ledger entries' : 'Showing top recent ledger entries'}
+        </span>
         <button
           onClick={onViewAll}
           className="text-brand-400 hover:text-brand-300 font-semibold flex items-center space-x-1 cursor-pointer"

@@ -1,34 +1,41 @@
 # ArthaAI — Intelligent Personal Finance & Wealth Management System
 
-ArthaAI is an enterprise-grade full-stack personal finance and autonomous intelligence platform. This repository represents the integrated implementation of **Phase 1 (Full-Stack Architecture)**, **Phase 2 (Premium Fintech Dashboard)**, and **Phase 3 (Enterprise Authentication & User Management)**.
+ArthaAI is an enterprise-grade full-stack personal finance and autonomous intelligence platform. This repository represents the integrated implementation of:
+- **Phase 1: Professional Full-Stack Architecture & Telemetry Probes**
+- **Phase 2: Premium Fintech Dashboard UI & Analytics**
+- **Phase 3: Enterprise Authentication & User Management**
+- **Phase 4: Persistent Financial Transaction Management**
 
 ---
 
 ## 🏛️ Architecture Overview
 
-The project is cleanly decoupled into client and server workspaces with strict separation of concerns, enterprise security, and strong TypeScript typings:
+The project is structured with strict client-server decoupling, strong TypeScript contracts, and database-backed financial persistence:
 
 ```
 ArthaAI/
 ├── backend/                        # Node.js + Express + TypeScript API Server
 │   ├── src/
-│   │   ├── config/                 # Environment variables & MongoDB Atlas lifecycle
+│   │   ├── config/                 # Environment schema & MongoDB Atlas lifecycle
 │   │   │   ├── database.ts         # Mongoose connection manager & health hooks
 │   │   │   └── env.ts              # Strongly-typed environment schema & validation
 │   │   ├── controllers/            # Route controllers
 │   │   │   ├── auth.controller.ts  # Registration, login, logout, profile & password
-│   │   │   └── health.controller.ts# Liveness, readiness, and diagnostics probes
+│   │   │   ├── health.controller.ts# Liveness, readiness, and diagnostics probes
+│   │   │   └── transaction.controller.ts # Transaction CRUD, pagination, filters & summary
 │   │   ├── middleware/             # Express middlewares
 │   │   │   ├── auth.middleware.ts  # HttpOnly cookie & Bearer JWT authentication guard
 │   │   │   ├── errorHandler.ts     # Centralized error sanitizer & response pipeline
 │   │   │   ├── notFoundHandler.ts  # Standardized 404 handler
 │   │   │   └── rateLimit.middleware.ts # IP rate limiter for sensitive auth routes
 │   │   ├── models/                 # Mongoose schemas & data models
+│   │   │   ├── transaction.model.ts# Transaction model with integer minor units (paise/cents)
 │   │   │   └── user.model.ts       # User model with bcrypt hashing & JSON sanitization
 │   │   ├── routes/                 # Express API routes
 │   │   │   ├── auth.route.ts       # /api/auth authentication endpoints
 │   │   │   ├── health.route.ts     # /api/health probes & telemetry
-│   │   │   └── index.ts            # Central API route gateway
+│   │   │   ├── index.ts            # Central API route gateway
+│   │   │   └── transaction.route.ts# /api/transactions financial ledger endpoints
 │   │   ├── types/                  # Backend TypeScript interfaces & declarations
 │   │   │   └── index.ts
 │   │   ├── utils/                  # Cryptography, tokens & response formatters
@@ -38,8 +45,9 @@ ArthaAI/
 │   │   │   └── token.ts            # JWT signing, verification & cookie management
 │   │   ├── app.ts                  # Express application setup, security stack & cookies
 │   │   └── server.ts               # HTTP server bootstrap & graceful shutdown hooks
-│   ├── tests/                      # Automated test suites
-│   │   └── auth.test.ts            # 16 automated tests covering auth, JWT, bcrypt & DB degradation
+│   ├── tests/                      # Automated test suites (34 tests passing)
+│   │   ├── auth.test.ts            # 16 automated tests covering auth, JWT, bcrypt & DB degradation
+│   │   └── transactions.test.ts    # 18 automated tests covering CRUD, minor units, isolation & math
 │   ├── .env.example                # Sanitized backend environment template
 │   ├── package.json                # Backend dependencies, build & test scripts
 │   └── tsconfig.json               # Backend TypeScript configuration
@@ -55,17 +63,19 @@ ArthaAI/
 │   │   │   │   └── UserProfileModal.tsx # Profile editor & password change modal
 │   │   │   ├── dashboard/          # Financial dashboard cards & visual analytics
 │   │   │   │   ├── AIAssistantCard.tsx # Natural language finance assistant preview
-│   │   │   │   ├── FinancialCharts.tsx # Interactive Income vs Expense & category charts
+│   │   │   │   ├── FinancialCharts.tsx # Dynamic Cash flow area chart & expense donut
 │   │   │   │   ├── FinancialHealthCard.tsx # Health score & savings rate metrics
-│   │   │   │   ├── MetricCards.tsx # Total balance, income, expenses & savings cards
-│   │   │   │   ├── RecentTransactionsCard.tsx # Filterable transaction ledger
-│   │   │   │   └── SavingsGoalsCard.tsx # Interactive target progress bars
+│   │   │   │   ├── MetricCards.tsx # Net worth, income, expenses & liquid savings
+│   │   │   │   ├── RecentTransactionsCard.tsx # Filterable recent ledger card
+│   │   │   │   └── SavingsGoalsCard.tsx # Target progress bars
 │   │   │   ├── layout/             # Master app shell
 │   │   │   │   ├── Header.tsx      # Top bar with user profile, date filter & actions
-│   │   │   │   └── Sidebar.tsx     # Responsive collapsable navigation bar
-│   │   │   ├── modals/             # Transaction, goal & system status dialogs
+│   │   │   │   └── Sidebar.tsx     # Responsive navigation bar with live transaction badge
+│   │   │   ├── modals/             # Action dialogs
 │   │   │   │   ├── AddGoalModal.tsx
-│   │   │   │   ├── AddTransactionModal.tsx
+│   │   │   │   ├── AddTransactionModal.tsx # Transaction recorder with validation
+│   │   │   │   ├── EditTransactionModal.tsx # Edit transaction details & amount
+│   │   │   │   ├── DeleteTransactionModal.tsx # Confirm permanent deletion
 │   │   │   │   └── SystemStatusModal.tsx # Live full-stack architecture probe
 │   │   │   └── views/              # Full page views
 │   │   │       ├── AIAssistantView.tsx
@@ -75,19 +85,20 @@ ArthaAI/
 │   │   │       ├── ReportsAnalyticsView.tsx
 │   │   │       ├── SavingsGoalsView.tsx
 │   │   │       ├── SettingsView.tsx
-│   │   │       └── TransactionsView.tsx
+│   │   │       └── TransactionsView.tsx # Searchable, paginated transaction ledger & CSV export
 │   │   ├── context/                # React state context
 │   │   │   └── AuthContext.tsx     # Global authentication provider with guest mode
 │   │   ├── data/                   # Identified frontend demo data
 │   │   │   └── mockFinanceData.ts
 │   │   ├── services/               # API clients
 │   │   │   ├── api.ts              # Health & telemetry service
-│   │   │   └── auth.ts             # Auth REST API service with HttpOnly credentials
+│   │   │   ├── auth.ts             # Auth REST API service with HttpOnly credentials
+│   │   │   └── transactions.ts     # Persistent financial transaction API service
 │   │   ├── types/                  # Frontend TypeScript definitions
 │   │   │   ├── auth.ts             # Auth user, payloads & responses
 │   │   │   ├── finance.ts          # Financial models & filter definitions
 │   │   │   └── index.ts            # System health interfaces
-│   │   ├── App.tsx                 # Root application with auth gating & dashboard shell
+│   │   ├── App.tsx                 # Root application with auth gating & live ledger state
 │   │   ├── index.css               # Tailwind CSS theme & glassmorphic utilities
 │   │   └── main.tsx                # Frontend bootstrap
 │   ├── .env.example                # Example frontend environment variables
@@ -105,44 +116,72 @@ ArthaAI/
 
 ---
 
-## 🔐 Phase 3: Authentication & Security Architecture
+## 💰 Phase 4: Financial Transaction Management
 
-### 1. Database Model (`User`)
-- **Full Name**: Trimmed string with min/max length validation.
-- **Email Address**: Normalized to lowercase, strictly validated for RFC-compliant email formats, enforced with unique MongoDB indexing.
-- **Password Hash**: Irreversibly hashed using `bcrypt` (10 salt rounds). Excluded from default queries (`select: false`) and automatically omitted from all serialized JSON responses.
-- **Phone Number**: Optional sanitized string.
-- **Account Status**: Enum (`active`, `suspended`, `pending`).
-- **Email Verification**: Boolean flag (`isEmailVerified`).
-- **Timestamps**: Automatic `createdAt` and `updatedAt`.
+### 1. Database Model (`Transaction`)
+- **`userId`**: `ObjectId` reference to `User`, strictly required and indexed. Every record is cryptographically bound to its authenticated owner.
+- **`title`**: String (1–150 chars), trimmed.
+- **`description`**: String (optional, up to 500 chars).
+- **`amountInCents`**: Integer minor units (e.g. 1050 cents = $10.50 / ₹10.50). Validated with `min: 1` and `Number.isInteger`. Eliminates IEEE 754 floating-point rounding errors during financial aggregation.
+- **`type`**: Enum (`'income' | 'expense'`).
+- **`category`**: String (e.g. `'Salary & Earnings'`, `'Food & Dining'`, `'Technology & SaaS'`).
+- **`merchant`**: String (optional, up to 100 chars).
+- **`paymentMethod`**: Enum (`'bank_transfer' | 'credit_card' | 'debit_card' | 'upi' | 'cash' | 'other'`).
+- **`transactionDate`**: Date (default: `Date.now`).
+- **`notes`**: String (optional, up to 1000 chars).
+- **`account`**: String (default: `'Primary Checking'`).
+- **`status`**: Enum (`'completed' | 'pending'`).
+- **Indexes**:
+  - Compound: `{ userId: 1, transactionDate: -1 }` (fast chronological ledger queries).
+  - Compound: `{ userId: 1, type: 1 }` (inflow vs outflow separation).
+  - Compound: `{ userId: 1, category: 1 }` (category-wise spend aggregation).
+  - Text: `{ userId: 1, title: 'text', merchant: 'text' }`.
 
-### 2. Token & Session Management
-- **Short-Lived JWT Access Tokens**: Signed using HMAC-SHA256 with user `id`, `email`, and `accountStatus`. Configured to expire in 7 days by default (customizable via `JWT_EXPIRES_IN`).
-- **Secure HttpOnly Cookies**: Sent with `httpOnly: true`, `sameSite: 'lax'`, and dynamic `secure: true` in production environments. Tokens cannot be read by browser JavaScript, protecting against XSS credential theft.
-- **Dual Bearer Support**: The authentication middleware accepts both incoming HttpOnly cookies and `Authorization: Bearer <token>` headers, enabling both web application and future mobile/REST clients.
+### 2. Financial Calculations & Precision
+- All aggregations are performed in integer minor units (`amountInCents`).
+- Conversion helpers `amountToCents()` and `centsToAmount()` guarantee precision:
+  ```ts
+  amountToCents(amount: number) => Math.round(amount * 100)
+  centsToAmount(cents: number) => Math.round(cents) / 100
+  ```
+- **Summary Metrics**:
+  - `totalIncome`: Sum of all income transactions in period.
+  - `totalExpenses`: Sum of all expense transactions in period.
+  - `netBalance`: `totalIncome - totalExpenses`.
+  - `totalSavings`: `Math.max(0, netBalance)`.
+  - `savingsRatePercentage`: `Math.round(((totalIncome - totalExpenses) / totalIncome) * 100)`.
+  - `categoryBreakdown`: Category-wise expense totals and relative percentage share.
+  - `monthlyCashFlow`: Chronological monthly inflow, outflow, and net savings points.
 
-### 3. Rate Limiting
-- Built using `express-rate-limit`.
-- Applied directly to sensitive authentication endpoints (`/api/auth/*`).
-- Restricts requests to 15 attempts per 15-minute window per IP to eliminate brute-force and credential-stuffing vulnerabilities.
-
-### 4. Database-Unconfigured Graceful Degradation
-- If MongoDB Atlas credentials are not yet specified in `backend/.env`, the system does **not** crash or fabricate fake data.
-- Calls to database-dependent endpoints (`/api/auth/register`, `/api/auth/login`, `/api/auth/profile`, `/api/auth/change-password`) cleanly return `503 Service Unavailable` with a descriptive message prompting the operator to configure `MONGODB_URI`.
-- The frontend provides an instant **Guest Demo Mode (Alex Morgan)** so evaluators can test the entire application and interactive dashboard without requiring an active database cluster.
+### 3. Data Isolation & Security Guarantees
+- **No Client Trust for Identity**: The `userId` is obtained strictly from the verified authentication session (`req.user.id`). Any `userId` supplied in request payloads is ignored.
+- **Query Scoping**: Every database lookup (`find`, `findOne`, `findOneAndUpdate`, `findOneAndDelete`) is scoped with `{ userId }`. A user can never read, modify, or delete another user's transactions (returns `404 Not Found`).
+- **MongoDB Degradation**: If MongoDB Atlas credentials are not configured, calls to `/api/transactions/*` safely return `503 Service Unavailable` with actionable guidance without crashing or exposing stack traces.
 
 ---
 
-## 📡 Authentication REST API Endpoints
+## 📡 REST API Endpoints
 
+### Authentication Endpoints (`/api/auth`)
 | Method | Endpoint | Access | Description |
 | :--- | :--- | :--- | :--- |
-| `POST` | `/api/auth/register` | Public (Rate-limited) | Creates a new user, hashes password, sets auth cookie & returns sanitized user |
-| `POST` | `/api/auth/login` | Public (Rate-limited) | Authenticates email & password, sets auth cookie & returns token + user |
+| `POST` | `/api/auth/register` | Public (Rate-limited) | Creates a user, hashes password with bcrypt, sets auth cookie & returns user |
+| `POST` | `/api/auth/login` | Public (Rate-limited) | Verifies credentials, sets HttpOnly cookie & returns token + user |
 | `POST` | `/api/auth/logout` | Authenticated / Public | Clears the HttpOnly session cookie |
-| `GET` | `/api/auth/me` | Authenticated | Validates session via cookie or Bearer token and returns authenticated user |
-| `PATCH` | `/api/auth/profile` | Authenticated | Updates current user full name and phone number |
+| `GET` | `/api/auth/me` | Authenticated | Returns current authenticated user profile |
+| `PATCH` | `/api/auth/profile` | Authenticated | Updates user full name and phone number |
 | `PATCH` | `/api/auth/change-password` | Authenticated | Verifies old password and updates to new password hash |
+
+### Transaction Endpoints (`/api/transactions`)
+| Method | Endpoint | Access | Query Parameters / Payload | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| `POST` | `/api/transactions` | Authenticated | Body: `{ title, amount, type, category, merchant?, paymentMethod?, notes?, account? }` | Records a new transaction with positive amount |
+| `GET` | `/api/transactions` | Authenticated | `?page=1&limit=20&search=keyword&type=expense&category=Food&dateFilter=this_month` | Returns paginated, user-isolated transaction records |
+| `GET` | `/api/transactions/:id` | Authenticated | URL param `:id` | Retrieves a single transaction with ownership verification |
+| `PATCH` | `/api/transactions/:id` | Authenticated | URL param `:id`, Body: partial updates | Updates an existing transaction with ownership verification |
+| `DELETE` | `/api/transactions/:id` | Authenticated | URL param `:id` | Deletes a transaction with ownership verification |
+| `GET` | `/api/transactions/summary` | Authenticated | `?dateFilter=this_month&startDate=...&endDate=...` | Computes financial totals, savings rate, and category breakdowns |
+| `GET` | `/api/transactions/categories` | Authenticated | None | Returns standard and user-custom transaction categories |
 
 ---
 
@@ -156,8 +195,7 @@ NODE_ENV=development
 CLIENT_ORIGIN=http://localhost:5173
 API_PREFIX=/api
 
-# MongoDB Atlas
-# If omitted or unconfigured, server runs gracefully in unconfigured mode
+# MongoDB Atlas URI (optional for initial guest preview, required for live DB persistence)
 MONGODB_URI=mongodb+srv://<username>:<password>@<cluster-url>/artha_ai?retryWrites=true&w=majority
 
 # JWT & Authentication Security
@@ -175,30 +213,31 @@ VITE_API_BASE_URL=http://localhost:5000
 
 ---
 
-## 🚀 Getting Started & Execution
+## 🚀 Execution & Testing
 
-### 1. Installation
-Install root, backend, and frontend packages:
+### 1. Run Automated Unit & Integration Tests (34 Tests)
 ```bash
-npm run install:all
-```
-
-### 2. Run Automated Test Suite
-Run the 16 automated backend authentication and health unit/integration tests:
-```bash
-npm run test:backend
-# or
 npm test
+# or
+npm --prefix backend test
 ```
+The test suite validates:
+- Password hashing with bcrypt
+- JWT generation, verification, and tamper rejection
+- Cookie and Bearer token authentication
+- Transaction creation, retrieval, editing, and deletion
+- Positive amount validation & integer minor units
+- Cross-user authorization isolation
+- Financial summary arithmetic & category breakdowns
+- MongoDB unavailable graceful degradation (503)
 
-### 3. Production Build
-Build both backend (TypeScript compilation to `dist/`) and frontend (Vite bundler to `dist/`):
+### 2. Production Build Verification
 ```bash
 npm run build
 ```
+Compiles both backend TypeScript (`tsc`) and frontend bundle (`vite build`).
 
-### 4. Development Servers
-Start backend and frontend development servers concurrently:
+### 3. Development Server
 ```bash
 # Terminal 1: Backend API (http://localhost:5000)
 npm run dev:backend
@@ -210,11 +249,13 @@ npm run dev:frontend
 ---
 
 ## 🛡️ Security Audit Checklist
-- [x] Passwords irreversibly hashed with bcrypt (salt rounds: 10).
-- [x] JWT tokens stored in secure HttpOnly cookies (`SameSite=lax`, `Secure` in production).
-- [x] Password hashes strictly excluded from all API responses and MongoDB default projections.
-- [x] Sensitive endpoints rate-limited against brute force attacks.
-- [x] CORS origin whitelist strictly enforced.
-- [x] Strict input validation for emails, full names, and passwords.
-- [x] Automated test suite verifying edge cases and database degradation behavior.
-- [x] Zero exposed credentials, `.env` files, or secrets in Git tracking.
+- [x] Every financial record strictly associates with authenticated `userId`.
+- [x] `userId` from request body is strictly discarded in favor of verified session context.
+- [x] Integer minor units prevent IEEE 754 financial calculation drift.
+- [x] Zero-amount and negative-amount transactions rejected at model & controller levels.
+- [x] Cross-user access blocked via compound database ownership queries.
+- [x] Sensitive authentication routes protected by IP rate limiting (15 req / 15 min).
+- [x] HttpOnly, SameSite cookies prevent credential access from browser JavaScript.
+- [x] CSV export generated safely from authorized records only.
+- [x] 100% test pass rate across 34 automated unit and integration tests.
+- [x] Zero secrets, tokens, or credentials stored in repository or frontend code.

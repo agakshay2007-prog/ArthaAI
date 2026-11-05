@@ -5,7 +5,13 @@ import { FinancialHealthCard } from '../dashboard/FinancialHealthCard';
 import { SavingsGoalsCard } from '../dashboard/SavingsGoalsCard';
 import { RecentTransactionsCard } from '../dashboard/RecentTransactionsCard';
 import { AIAssistantCard } from '../dashboard/AIAssistantCard';
-import { Transaction, DateFilterOption, SavingsGoal } from '../../types/finance';
+import {
+  Transaction,
+  DateFilterOption,
+  SavingsGoal,
+  MonthlyCashFlowPoint,
+  CategoryExpenseBreakdown,
+} from '../../types/finance';
 import { DEMO_FINANCIAL_SUMMARY } from '../../data/mockFinanceData';
 
 interface DashboardViewProps {
@@ -15,6 +21,9 @@ interface DashboardViewProps {
   goals?: SavingsGoal[];
   onViewAllTransactions: () => void;
   onOpenNewGoal: () => void;
+  isLive?: boolean;
+  cashFlow?: MonthlyCashFlowPoint[];
+  categoryBreakdown?: CategoryExpenseBreakdown[];
 }
 
 export const DashboardView: React.FC<DashboardViewProps> = ({
@@ -24,6 +33,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   goals,
   onViewAllTransactions,
   onOpenNewGoal,
+  isLive = false,
+  cashFlow,
+  categoryBreakdown,
 }) => {
   return (
     <div className="space-y-8 animate-fadeIn">
@@ -31,13 +43,21 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       <MetricCards summary={summary} />
 
       {/* 2. Financial Analytics Charts (Area + Donut) */}
-      <FinancialCharts dateFilter={dateFilter} />
+      <FinancialCharts
+        dateFilter={dateFilter}
+        cashFlow={cashFlow}
+        categoryBreakdown={categoryBreakdown}
+      />
 
       {/* 3. Operational Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Left Column: Recent Transactions & Savings Goals */}
         <div className="space-y-6">
-          <RecentTransactionsCard transactions={transactions} onViewAll={onViewAllTransactions} />
+          <RecentTransactionsCard
+            transactions={transactions}
+            onViewAll={onViewAllTransactions}
+            isLive={isLive}
+          />
           <SavingsGoalsCard goals={goals} onOpenNewGoal={onOpenNewGoal} />
         </div>
 

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { LoginView } from './components/auth/LoginView';
 import { RegisterView } from './components/auth/RegisterView';
@@ -15,17 +15,29 @@ import { AIAssistantView } from './components/views/AIAssistantView';
 import { ReportsAnalyticsView } from './components/views/ReportsAnalyticsView';
 import { SettingsView } from './components/views/SettingsView';
 import { AddTransactionModal } from './components/modals/AddTransactionModal';
+import { EditTransactionModal } from './components/modals/EditTransactionModal';
+import { DeleteTransactionModal } from './components/modals/DeleteTransactionModal';
 import { AddGoalModal } from './components/modals/AddGoalModal';
 import { SystemStatusModal } from './components/modals/SystemStatusModal';
-import { NavigationTab, DateFilterOption, Transaction, SavingsGoal } from './types/finance';
+import {
+  NavigationTab,
+  DateFilterOption,
+  Transaction,
+  SavingsGoal,
+  CreateTransactionInput,
+  UpdateTransactionInput,
+  TransactionSummary,
+} from './types/finance';
 import {
   DEMO_TRANSACTIONS,
   DEMO_SAVINGS_GOALS,
   DEMO_SUMMARIES_BY_DATE_FILTER,
   DEMO_FINANCIAL_SUMMARY,
 } from './data/mockFinanceData';
+import { transactionService } from './services/transactions';
 
 const MainDashboardLayout: React.FC = () => {
+  const { user, isGuestMode } = useAuth();
   const [currentTab, setCurrentTab] = useState<NavigationTab>('dashboard');
   const [dateFilter, setDateFilter] = useState<DateFilterOption>('this_month');
   const [searchQuery, setSearchQuery] = useState('');
@@ -34,20 +46,87 @@ const MainDashboardLayout: React.FC = () => {
 
   // Modals state
   const [isAddTxOpen, setIsAddTxOpen] = useState(false);
+  const [isEditTxOpen, setIsEditTxOpen] = useState(false);
+  const [isDeleteTxOpen, setIsDeleteTxOpen] = useState(false);
+  const [selectedTx, setSelectedTx] = useState<Transaction | null>(null);
   const [isAddGoalOpen, setIsAddGoalOpen] = useState(false);
   const [isSystemStatusOpen, setIsSystemStatusOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
 
-  // Live transactions ledger state
+  // Live transactions & summary state
   const [transactions, setTransactions] = useState<Transaction[]>(DEMO_TRANSACTIONS);
+  const [liveSummary, setLiveSummary] = useState<TransactionSummary | null>(null);
+  const [isLoadingTx, setIsLoadingTx] = useState(false);
+  const [dbUnconfiguredWarning, setDbUnconfiguredWarning] = useState(false);
 
   // Live savings goals state
   const [savingsGoals, setSavingsGoals] = useState<SavingsGoal[]>(DEMO_SAVINGS_GOALS);
 
-  // Dynamically compute financial summary based on selected period & added transactions
+  // Fetch live transactions and summary when user is authenticated (not guest mode)
+  const fetchLedger = useCallback(async () => {
+    if (isGuestMode) {
+      setDbUnconfiguredWarning(false);
+      return;
+    }
+
+    setIsLoadingTx(true);
+    try {
+      const [txRes, summaryRes] = await Promise.all([
+        transactionService.getTransactions({ dateFilter }),
+        transactionService.getTransactionSummary(dateFilter),
+      ]);
+
+      setTransactions(txRes.transactions);
+      setLiveSummary(summaryRes);
+      setDbUnconfiguredWarning(false);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : '';
+      if (msg.includes('Database is unconfigured') || msg.includes('503')) {
+        setDbUnconfiguredWarning(true);
+      }
+    } finally {
+      setIsLoadingTx(false);
+    }
+  }, [isGuestMode, dateFilter]);
+
+  useEffect(() => {
+    fetchLedger();
+  }, [fetchLedger]);
+
+  // Dynamically compute financial summary based on period, live summary or demo data
   const dynamicSummary = useMemo(() => {
+    if (liveSummary && !isGuestMode && !dbUnconfiguredWarning) {
+      const initials = user?.fullName
+        ? user.fullName
+            .split(' ')
+            .map((n) => n[0])
+            .join('')
+            .toUpperCase()
+            .slice(0, 2)
+        : 'AM';
+
+      return {
+        totalBalance: liveSummary.netBalance,
+        monthlyIncome: liveSummary.totalIncome,
+        monthlyExpenses: liveSummary.totalExpenses,
+        totalSavings: liveSummary.totalSavings,
+        balanceChangePercentage: 4.8,
+        incomeChangePercentage: 2.1,
+        expensesChangePercentage: -5.4,
+        savingsRatePercentage: liveSummary.savingsRatePercentage,
+        currencySymbol: '$',
+        currencyCode: 'USD',
+        userProfile: {
+          name: user?.fullName || 'Alex Morgan',
+          email: user?.email || 'alex.morgan@artha.ai',
+          tier: 'ArthaAI Pro',
+          avatarInitials: initials,
+        },
+      };
+    }
+
+    // Guest demo mode dynamic calculation
     const base = DEMO_SUMMARIES_BY_DATE_FILTER[dateFilter] || DEMO_FINANCIAL_SUMMARY;
-    // Calculate delta from user-added transactions
     const userAdded = transactions.filter((t) => !t.id.startsWith('tx-1'));
     const addedIncome = userAdded.filter((t) => t.type === 'income').reduce((acc, t) => acc + t.amount, 0);
     const addedExpense = userAdded.filter((t) => t.type === 'expense').reduce((acc, t) => acc + t.amount, 0);
@@ -58,11 +137,80 @@ const MainDashboardLayout: React.FC = () => {
       monthlyIncome: base.monthlyIncome + addedIncome,
       monthlyExpenses: base.monthlyExpenses + addedExpense,
       totalSavings: base.totalSavings + Math.max(0, addedIncome - addedExpense),
+      userProfile: {
+        ...base.userProfile,
+        name: user?.fullName || base.userProfile.name,
+        email: user?.email || base.userProfile.email,
+      },
     };
-  }, [dateFilter, transactions]);
+  }, [liveSummary, isGuestMode, dbUnconfiguredWarning, transactions, dateFilter, user]);
 
-  const handleAddTransaction = (newTx: Transaction) => {
-    setTransactions((prev) => [newTx, ...prev]);
+  // Handle adding a transaction
+  const handleAddTransaction = async (input: CreateTransactionInput): Promise<boolean> => {
+    if (isGuestMode || dbUnconfiguredWarning) {
+      const newTx: Transaction = {
+        id: `tx-user-${Date.now()}`,
+        title: input.title,
+        amount: input.amount,
+        type: input.type,
+        category: input.category,
+        merchant: input.merchant || input.title,
+        date: 'Today',
+        status: 'completed',
+        account: input.account || 'Primary Checking',
+        notes: input.notes,
+        isDemoRecord: true,
+      };
+      setTransactions((prev) => [newTx, ...prev]);
+      return true;
+    }
+
+    try {
+      const created = await transactionService.createTransaction(input);
+      setTransactions((prev) => [created, ...prev]);
+      // Refresh summary
+      transactionService.getTransactionSummary(dateFilter).then((s) => setLiveSummary(s)).catch(() => {});
+      return true;
+    } catch (err: unknown) {
+      // If DB error, throw for modal to display
+      throw err;
+    }
+  };
+
+  // Handle updating a transaction
+  const handleUpdateTransaction = async (id: string, updates: UpdateTransactionInput): Promise<boolean> => {
+    if (isGuestMode || dbUnconfiguredWarning) {
+      setTransactions((prev) =>
+        prev.map((t) => (t.id === id ? { ...t, ...updates } : t))
+      );
+      return true;
+    }
+
+    try {
+      const updated = await transactionService.updateTransaction(id, updates);
+      setTransactions((prev) => prev.map((t) => (t.id === id ? updated : t)));
+      transactionService.getTransactionSummary(dateFilter).then((s) => setLiveSummary(s)).catch(() => {});
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
+  // Handle deleting a transaction
+  const handleDeleteTransaction = async (id: string): Promise<boolean> => {
+    if (isGuestMode || dbUnconfiguredWarning) {
+      setTransactions((prev) => prev.filter((t) => t.id !== id));
+      return true;
+    }
+
+    try {
+      await transactionService.deleteTransaction(id);
+      setTransactions((prev) => prev.filter((t) => t.id !== id));
+      transactionService.getTransactionSummary(dateFilter).then((s) => setLiveSummary(s)).catch(() => {});
+      return true;
+    } catch {
+      return false;
+    }
   };
 
   const handleAddGoal = (newGoal: SavingsGoal) => {
@@ -80,13 +228,26 @@ const MainDashboardLayout: React.FC = () => {
             goals={savingsGoals}
             onViewAllTransactions={() => setCurrentTab('transactions')}
             onOpenNewGoal={() => setIsAddGoalOpen(true)}
+            isLive={!isGuestMode && !dbUnconfiguredWarning}
+            cashFlow={liveSummary?.monthlyCashFlow}
+            categoryBreakdown={liveSummary?.categoryBreakdown}
           />
         );
       case 'transactions':
         return (
           <TransactionsView
             transactions={transactions}
+            isLoading={isLoadingTx}
             onOpenAddTransaction={() => setIsAddTxOpen(true)}
+            onEditTransaction={(tx) => {
+              setSelectedTx(tx);
+              setIsEditTxOpen(true);
+            }}
+            onDeleteTransaction={(tx) => {
+              setSelectedTx(tx);
+              setIsDeleteTxOpen(true);
+            }}
+            onRefresh={fetchLedger}
           />
         );
       case 'budgeting':
@@ -120,6 +281,9 @@ const MainDashboardLayout: React.FC = () => {
             goals={savingsGoals}
             onViewAllTransactions={() => setCurrentTab('transactions')}
             onOpenNewGoal={() => setIsAddGoalOpen(true)}
+            isLive={!isGuestMode && !dbUnconfiguredWarning}
+            cashFlow={liveSummary?.monthlyCashFlow}
+            categoryBreakdown={liveSummary?.categoryBreakdown}
           />
         );
     }
@@ -137,6 +301,7 @@ const MainDashboardLayout: React.FC = () => {
         onToggleCollapseDesktop={() => setIsCollapsedDesktop(!isCollapsedDesktop)}
         onOpenSystemStatus={() => setIsSystemStatusOpen(true)}
         onOpenProfile={() => setIsProfileOpen(true)}
+        transactionCount={transactions.length}
       />
 
       {/* 2. Main Content Canvas */}
@@ -152,6 +317,21 @@ const MainDashboardLayout: React.FC = () => {
           onOpenProfile={() => setIsProfileOpen(true)}
         />
 
+        {/* Informational banner if backend MongoDB is unconfigured */}
+        {dbUnconfiguredWarning && !isGuestMode && (
+          <div className="bg-amber-500/10 border-b border-amber-500/20 px-4 py-2 text-xs text-amber-300 flex items-center justify-between">
+            <span>
+              <strong>Advisory:</strong> MongoDB Atlas is currently unconfigured in <code>backend/.env</code>. Ledger operations are utilizing isolated demo storage.
+            </span>
+            <button
+              onClick={() => setIsSystemStatusOpen(true)}
+              className="text-amber-200 underline hover:text-white font-medium"
+            >
+              View System Status
+            </button>
+          </div>
+        )}
+
         {/* View Content Body */}
         <main className="flex-1 overflow-y-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="max-w-7xl mx-auto">
@@ -165,6 +345,26 @@ const MainDashboardLayout: React.FC = () => {
         isOpen={isAddTxOpen}
         onClose={() => setIsAddTxOpen(false)}
         onAddTransaction={handleAddTransaction}
+      />
+
+      <EditTransactionModal
+        isOpen={isEditTxOpen}
+        onClose={() => {
+          setIsEditTxOpen(false);
+          setSelectedTx(null);
+        }}
+        transaction={selectedTx}
+        onUpdateTransaction={handleUpdateTransaction}
+      />
+
+      <DeleteTransactionModal
+        isOpen={isDeleteTxOpen}
+        onClose={() => {
+          setIsDeleteTxOpen(false);
+          setSelectedTx(null);
+        }}
+        transaction={selectedTx}
+        onConfirmDelete={handleDeleteTransaction}
       />
 
       <AddGoalModal

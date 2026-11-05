@@ -24,3 +24,4 @@ router.patch('/profile', authenticate, asyncHandler(updateProfile));
 router.patch('/change-password', authRateLimiter, authenticate, asyncHandler(changePassword));
 
 export default router;
+

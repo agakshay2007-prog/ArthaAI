@@ -28,8 +28,11 @@ export class AppError extends Error {
     return new AppError(message, 404, details);
   }
 
+  static serviceUnavailable(message = 'Service unavailable', details?: unknown): AppError {
+    return new AppError(message, 503, details);
+  }
+
   static internal(message = 'Internal server error', details?: unknown): AppError {
     return new AppError(message, 500, details, false);
   }
 }
-

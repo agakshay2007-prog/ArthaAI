@@ -62,3 +62,64 @@ export interface AuthSuccessData {
   user: UserResponse;
   token?: string;
 }
+
+export interface TransactionResponse {
+  id: string;
+  userId: string;
+  title: string;
+  description?: string;
+  amountInCents: number;
+  amount: number;
+  type: 'income' | 'expense';
+  category: string;
+  merchant?: string;
+  paymentMethod: string;
+  transactionDate: string;
+  notes?: string;
+  account: string;
+  status: 'completed' | 'pending';
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PaginationMetadata {
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+  hasMore: boolean;
+}
+
+export interface CategoryExpenseBreakdown {
+  category: string;
+  totalAmountInCents: number;
+  totalAmount: number;
+  transactionCount: number;
+  percentage: number;
+}
+
+export interface MonthlyFlowPoint {
+  month: string;
+  incomeInCents: number;
+  income: number;
+  expensesInCents: number;
+  expenses: number;
+  netSavingsInCents: number;
+  netSavings: number;
+}
+
+export interface TransactionSummaryData {
+  period: string;
+  totalIncomeInCents: number;
+  totalIncome: number;
+  totalExpensesInCents: number;
+  totalExpenses: number;
+  netBalanceInCents: number;
+  netBalance: number;
+  totalSavingsInCents: number;
+  totalSavings: number;
+  savingsRatePercentage: number;
+  transactionCount: number;
+  categoryBreakdown: CategoryExpenseBreakdown[];
+  monthlyCashFlow: MonthlyFlowPoint[];
+}

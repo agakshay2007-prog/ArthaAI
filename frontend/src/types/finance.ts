@@ -22,26 +22,82 @@ export type TransactionCategory =
   | 'Utilities & Bills'
   | 'Entertainment & Leisure'
   | 'Healthcare & Wellness'
-  | 'Shopping & Retail';
+  | 'Shopping & Retail'
+  | 'Other'
+  | string;
 
 export interface Transaction {
   id: string;
+  userId?: string;
   title: string;
+  description?: string;
   category: TransactionCategory;
   date: string;
+  transactionDate?: string;
   amount: number;
+  amountInCents?: number;
   type: TransactionType;
   status: 'completed' | 'pending';
   account: string;
   merchant?: string;
-  isDemoRecord: true;
+  paymentMethod?: string;
+  notes?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  isDemoRecord?: boolean;
 }
 
-export interface ExpenseCategoryShare {
-  name: string;
-  value: number;
-  color: string;
-  formattedAmount: string;
+export interface CreateTransactionInput {
+  title: string;
+  amount: number;
+  type: TransactionType;
+  category: string;
+  merchant?: string;
+  paymentMethod?: string;
+  transactionDate?: string;
+  notes?: string;
+  account?: string;
+}
+
+export interface UpdateTransactionInput {
+  title?: string;
+  amount?: number;
+  type?: TransactionType;
+  category?: string;
+  merchant?: string;
+  paymentMethod?: string;
+  transactionDate?: string;
+  notes?: string;
+  account?: string;
+  status?: 'completed' | 'pending';
+}
+
+export interface TransactionQueryParams {
+  page?: number;
+  limit?: number;
+  search?: string;
+  type?: string;
+  category?: string;
+  dateFilter?: DateFilterOption | 'all';
+  startDate?: string;
+  endDate?: string;
+  sort?: string;
+}
+
+export interface PaginationData {
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+  hasMore: boolean;
+}
+
+export interface CategoryExpenseBreakdown {
+  category: string;
+  totalAmountInCents?: number;
+  totalAmount: number;
+  transactionCount: number;
+  percentage: number;
 }
 
 export interface MonthlyCashFlowPoint {
@@ -49,6 +105,25 @@ export interface MonthlyCashFlowPoint {
   income: number;
   expenses: number;
   netSavings: number;
+}
+
+export interface TransactionSummary {
+  period: string;
+  totalIncome: number;
+  totalExpenses: number;
+  netBalance: number;
+  totalSavings: number;
+  savingsRatePercentage: number;
+  transactionCount: number;
+  categoryBreakdown: CategoryExpenseBreakdown[];
+  monthlyCashFlow: MonthlyCashFlowPoint[];
+}
+
+export interface ExpenseCategoryShare {
+  name: string;
+  value: number;
+  color: string;
+  formattedAmount: string;
 }
 
 export interface SavingsGoal {
@@ -60,7 +135,7 @@ export interface SavingsGoal {
   category: string;
   color: string;
   iconName: string;
-  isDemoRecord: true;
+  isDemoRecord?: boolean;
 }
 
 export interface FinancialHealthMetrics {
@@ -106,4 +181,3 @@ export interface AIChatMessage {
   suggestedQuestions?: string[];
   isDemoResponse: boolean;
 }
-

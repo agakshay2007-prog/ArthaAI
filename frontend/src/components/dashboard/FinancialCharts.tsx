@@ -16,11 +16,18 @@ import {
   DEMO_EXPENSE_CATEGORIES,
   DEMO_CASH_FLOW_BY_DATE_FILTER,
 } from '../../data/mockFinanceData';
-import { DateFilterOption } from '../../types/finance';
+import {
+  DateFilterOption,
+  MonthlyCashFlowPoint,
+  CategoryExpenseBreakdown,
+  ExpenseCategoryShare,
+} from '../../types/finance';
 import { ArrowUpRight, TrendingUp, PieChart as PieIcon } from 'lucide-react';
 
 interface FinancialChartsProps {
   dateFilter?: DateFilterOption;
+  cashFlow?: MonthlyCashFlowPoint[];
+  categoryBreakdown?: CategoryExpenseBreakdown[];
 }
 
 interface CustomTooltipProps {
@@ -37,7 +44,7 @@ const AreaTooltip: React.FC<CustomTooltipProps> = ({ active, payload, label }) =
   if (active && payload && payload.length) {
     return (
       <div className="bg-navy-900/95 border border-slate-700/80 backdrop-blur-md rounded-xl p-3 shadow-xl text-xs">
-        <div className="font-semibold text-slate-300 mb-1.5">{label} 2026</div>
+        <div className="font-semibold text-slate-300 mb-1.5">{label}</div>
         {payload.map((entry, index) => (
           <div key={`item-${index}`} className="flex items-center justify-between space-x-4 py-0.5">
             <span className="flex items-center space-x-1.5 text-slate-400">
@@ -45,7 +52,7 @@ const AreaTooltip: React.FC<CustomTooltipProps> = ({ active, payload, label }) =
               <span className="capitalize">{entry.name}:</span>
             </span>
             <span className="font-mono font-bold text-white">
-              ${entry.value.toLocaleString()}
+              ${entry.value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </span>
           </div>
         ))}
@@ -55,11 +62,36 @@ const AreaTooltip: React.FC<CustomTooltipProps> = ({ active, payload, label }) =
   return null;
 };
 
-export const FinancialCharts: React.FC<FinancialChartsProps> = ({ dateFilter = 'this_month' }) => {
+const CATEGORY_COLORS = ['#8b5cf6', '#06b6d4', '#10b981', '#f59e0b', '#ec4899', '#3b82f6', '#64748b'];
+
+export const FinancialCharts: React.FC<FinancialChartsProps> = ({
+  dateFilter = 'this_month',
+  cashFlow,
+  categoryBreakdown,
+}) => {
   const [activeMetric, setActiveMetric] = useState<'both' | 'income' | 'expenses'>('both');
 
-  const cashFlowData = DEMO_CASH_FLOW_BY_DATE_FILTER[dateFilter] || DEMO_MONTHLY_CASH_FLOW;
-  const totalExpenseVal = DEMO_EXPENSE_CATEGORIES.reduce((acc, curr) => acc + curr.value, 0);
+  // Use dynamic cash flow if available and non-empty, otherwise use filtered demo data
+  const chartData =
+    cashFlow && cashFlow.length > 0
+      ? cashFlow
+      : DEMO_CASH_FLOW_BY_DATE_FILTER[dateFilter] || DEMO_MONTHLY_CASH_FLOW;
+
+  // Use dynamic category breakdown if available and non-empty
+  const expenseCategories: ExpenseCategoryShare[] =
+    categoryBreakdown && categoryBreakdown.length > 0
+      ? categoryBreakdown.map((cat, idx) => ({
+          name: cat.category,
+          value: cat.totalAmount,
+          color: CATEGORY_COLORS[idx % CATEGORY_COLORS.length],
+          formattedAmount: `$${cat.totalAmount.toLocaleString(undefined, {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          })}`,
+        }))
+      : DEMO_EXPENSE_CATEGORIES;
+
+  const totalExpenseVal = expenseCategories.reduce((acc, curr) => acc + curr.value, 0);
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
@@ -73,7 +105,7 @@ export const FinancialCharts: React.FC<FinancialChartsProps> = ({ dateFilter = '
               </div>
               <h3 className="font-bold text-base text-white">Cash Flow Analytics</h3>
             </div>
-            <p className="text-xs text-slate-400 mt-1">Monthly Inflow vs Outflow trajectory (Jan - Jul 2026)</p>
+            <p className="text-xs text-slate-400 mt-1">Monthly Inflow vs Outflow trajectory</p>
           </div>
 
           {/* Metric Filter Tabs */}
@@ -108,7 +140,7 @@ export const FinancialCharts: React.FC<FinancialChartsProps> = ({ dateFilter = '
         {/* Recharts Area Container */}
         <div className="h-72 w-full">
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={cashFlowData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+            <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
               <defs>
                 <linearGradient id="incomeGradient" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="#10b981" stopOpacity={0.4} />
@@ -119,16 +151,16 @@ export const FinancialCharts: React.FC<FinancialChartsProps> = ({ dateFilter = '
                   <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0.0} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-              <XAxis dataKey="month" stroke="#64748b" fontSize={11} tickLine={false} axisLine={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
+              <XAxis dataKey="month" stroke="#64748b" tick={{ fontSize: 11 }} tickLine={false} />
               <YAxis
                 stroke="#64748b"
-                fontSize={11}
+                tick={{ fontSize: 11 }}
                 tickLine={false}
-                axisLine={false}
-                tickFormatter={(val) => `$${val / 1000}k`}
+                tickFormatter={(val) => `$${val >= 1000 ? `${(val / 1000).toFixed(0)}k` : val}`}
               />
               <Tooltip content={<AreaTooltip />} />
+
               {(activeMetric === 'both' || activeMetric === 'income') && (
                 <Area
                   type="monotone"
@@ -140,6 +172,7 @@ export const FinancialCharts: React.FC<FinancialChartsProps> = ({ dateFilter = '
                   fill="url(#incomeGradient)"
                 />
               )}
+
               {(activeMetric === 'both' || activeMetric === 'expenses') && (
                 <Area
                   type="monotone"
@@ -155,90 +188,98 @@ export const FinancialCharts: React.FC<FinancialChartsProps> = ({ dateFilter = '
           </ResponsiveContainer>
         </div>
 
-        <div className="flex items-center justify-between pt-4 mt-2 border-t border-slate-800/80 text-xs text-slate-400">
+        <div className="mt-4 pt-3 border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-400">
           <div className="flex items-center space-x-4">
             <span className="flex items-center space-x-1.5">
               <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
-              <span>Inflow ($9,450 peak)</span>
+              <span>Inflow</span>
             </span>
             <span className="flex items-center space-x-1.5">
               <span className="w-2.5 h-2.5 rounded-full bg-brand-500" />
-              <span>Outflow ($4,830 current)</span>
+              <span>Outflow</span>
             </span>
           </div>
-          <span className="text-emerald-400 font-semibold flex items-center">
-            Net Surplus: +$4,620.00
-            <ArrowUpRight className="w-3.5 h-3.5 ml-1" />
-          </span>
+          <span className="text-[11px] text-slate-500">Calculated with precision minor units</span>
         </div>
       </div>
 
-      {/* Donut Expense Category Breakdown */}
+      {/* Expense Allocation Donut Chart */}
       <div className="glass-card rounded-2xl p-6 flex flex-col justify-between">
         <div>
-          <div className="flex items-center space-x-2 mb-1">
-            <div className="p-1.5 rounded-lg bg-brand-500/10 text-brand-400 border border-brand-500/20">
-              <PieIcon className="w-4 h-4" />
-            </div>
-            <h3 className="font-bold text-base text-white">Expense Distribution</h3>
-          </div>
-          <p className="text-xs text-slate-400">Allocation across active budget categories</p>
-        </div>
-
-        {/* Donut Chart */}
-        <div className="h-52 relative flex items-center justify-center my-2">
-          <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
-              <Pie
-                data={DEMO_EXPENSE_CATEGORIES}
-                cx="50%"
-                cy="50%"
-                innerRadius={62}
-                outerRadius={88}
-                paddingAngle={4}
-                dataKey="value"
-              >
-                {DEMO_EXPENSE_CATEGORIES.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.color} stroke="transparent" />
-                ))}
-              </Pie>
-              <Tooltip
-                formatter={(value: any) => [`$${Number(value || 0).toLocaleString()}`, 'Spend']}
-                contentStyle={{
-                  backgroundColor: '#0b1021',
-                  borderColor: 'rgba(255,255,255,0.1)',
-                  borderRadius: '12px',
-                  fontSize: '11px',
-                }}
-              />
-            </PieChart>
-          </ResponsiveContainer>
-          {/* Centered Donut Label */}
-          <div className="absolute text-center pointer-events-none">
-            <div className="text-[10px] uppercase font-semibold text-slate-400">Total Spend</div>
-            <div className="text-lg font-extrabold text-white font-mono">
-              ${totalExpenseVal.toLocaleString()}
-            </div>
-          </div>
-        </div>
-
-        {/* Legend List */}
-        <div className="space-y-1.5 pt-2 border-t border-slate-800/80">
-          {DEMO_EXPENSE_CATEGORIES.slice(0, 4).map((cat) => {
-            const percentage = Math.round((cat.value / totalExpenseVal) * 100);
-            return (
-              <div key={cat.name} className="flex items-center justify-between text-xs">
-                <div className="flex items-center space-x-2">
-                  <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: cat.color }} />
-                  <span className="text-slate-300 truncate max-w-[130px]">{cat.name}</span>
-                </div>
-                <div className="flex items-center space-x-2 font-mono">
-                  <span className="text-white font-medium">{cat.formattedAmount}</span>
-                  <span className="text-slate-500 text-[11px]">({percentage}%)</span>
-                </div>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center space-x-2">
+              <div className="p-1.5 rounded-lg bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+                <PieIcon className="w-4 h-4" />
               </div>
-            );
-          })}
+              <h3 className="font-bold text-base text-white">Expense Distribution</h3>
+            </div>
+            <span className="text-xs text-brand-400 font-semibold cursor-pointer flex items-center space-x-0.5">
+              <span>Allocation</span>
+              <ArrowUpRight className="w-3.5 h-3.5" />
+            </span>
+          </div>
+
+          <p className="text-xs text-slate-400 mb-2">Category-wise spend breakdown</p>
+
+          {/* Donut Chart Container */}
+          <div className="h-44 w-full relative flex items-center justify-center">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={expenseCategories}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={50}
+                  outerRadius={72}
+                  paddingAngle={3}
+                  dataKey="value"
+                >
+                  {expenseCategories.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} stroke="#0f172a" strokeWidth={2} />
+                  ))}
+                </Pie>
+                <Tooltip
+                  formatter={(val: any) => [
+                    `$${Number(val || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+                    'Spent',
+                  ]}
+                  contentStyle={{
+                    backgroundColor: '#090d16',
+                    borderColor: '#334155',
+                    borderRadius: '0.75rem',
+                    fontSize: '11px',
+                  }}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+
+            {/* Donut Center Total Label */}
+            <div className="absolute text-center pointer-events-none">
+              <span className="text-[10px] uppercase tracking-wider text-slate-400 block font-semibold">Total</span>
+              <span className="text-xs font-bold text-white font-mono">
+                ${totalExpenseVal >= 1000 ? `${(totalExpenseVal / 1000).toFixed(1)}k` : totalExpenseVal.toFixed(0)}
+              </span>
+            </div>
+          </div>
+
+          {/* Category Legend List */}
+          <div className="mt-4 space-y-1.5 max-h-36 overflow-y-auto pr-1">
+            {expenseCategories.map((cat) => {
+              const pct = totalExpenseVal > 0 ? Math.round((cat.value / totalExpenseVal) * 100) : 0;
+              return (
+                <div key={cat.name} className="flex items-center justify-between text-xs py-0.5">
+                  <div className="flex items-center space-x-2 truncate pr-2">
+                    <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: cat.color }} />
+                    <span className="text-slate-300 truncate">{cat.name}</span>
+                  </div>
+                  <div className="flex items-center space-x-2 shrink-0">
+                    <span className="font-mono text-slate-100 font-semibold">{cat.formattedAmount}</span>
+                    <span className="text-[10px] text-slate-400 w-7 text-right">{pct}%</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
     </div>

@@ -44,3 +44,4 @@ export interface AuthResponse<T = unknown> {
   data?: T;
   timestamp: string;
 }
+

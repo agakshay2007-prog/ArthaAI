@@ -26,6 +26,7 @@ interface SidebarProps {
   onToggleCollapseDesktop: () => void;
   onOpenSystemStatus: () => void;
   onOpenProfile: () => void;
+  transactionCount?: number;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -37,6 +38,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onToggleCollapseDesktop,
   onOpenSystemStatus,
   onOpenProfile,
+  transactionCount,
 }) => {
   const { user, isGuestMode, logout } = useAuth();
 
@@ -51,7 +53,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   const navItems = [
     { id: 'dashboard' as NavigationTab, label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'transactions' as NavigationTab, label: 'Transactions', icon: ReceiptText, badge: '10' },
+    {
+      id: 'transactions' as NavigationTab,
+      label: 'Transactions',
+      icon: ReceiptText,
+      badge: transactionCount !== undefined ? String(transactionCount) : '10',
+    },
     { id: 'budgeting' as NavigationTab, label: 'Budgeting', icon: PiggyBank },
     { id: 'savings' as NavigationTab, label: 'Savings & Goals', icon: Target },
     { id: 'bills' as NavigationTab, label: 'Bills & Payments', icon: CalendarClock, badge: '1 Due' },
