@@ -1,65 +1,171 @@
-import React from 'react';
-import { Navbar } from './components/Navbar';
-import { ArchitectureOverview } from './components/ArchitectureOverview';
-import { HealthMonitor } from './components/HealthMonitor';
-import { Sparkles, Terminal } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { Sidebar } from './components/layout/Sidebar';
+import { Header } from './components/layout/Header';
+import { DashboardView } from './components/views/DashboardView';
+import { TransactionsView } from './components/views/TransactionsView';
+import { BudgetingView } from './components/views/BudgetingView';
+import { SavingsGoalsView } from './components/views/SavingsGoalsView';
+import { BillsPaymentsView } from './components/views/BillsPaymentsView';
+import { AIAssistantView } from './components/views/AIAssistantView';
+import { ReportsAnalyticsView } from './components/views/ReportsAnalyticsView';
+import { SettingsView } from './components/views/SettingsView';
+import { AddTransactionModal } from './components/modals/AddTransactionModal';
+import { AddGoalModal } from './components/modals/AddGoalModal';
+import { SystemStatusModal } from './components/modals/SystemStatusModal';
+import { NavigationTab, DateFilterOption, Transaction, SavingsGoal } from './types/finance';
+import {
+  DEMO_TRANSACTIONS,
+  DEMO_SAVINGS_GOALS,
+  DEMO_SUMMARIES_BY_DATE_FILTER,
+  DEMO_FINANCIAL_SUMMARY,
+} from './data/mockFinanceData';
 
 export const App: React.FC = () => {
+  const [currentTab, setCurrentTab] = useState<NavigationTab>('dashboard');
+  const [dateFilter, setDateFilter] = useState<DateFilterOption>('this_month');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isOpenMobile, setIsOpenMobile] = useState(false);
+  const [isCollapsedDesktop, setIsCollapsedDesktop] = useState(false);
+
+  // Modals state
+  const [isAddTxOpen, setIsAddTxOpen] = useState(false);
+  const [isAddGoalOpen, setIsAddGoalOpen] = useState(false);
+  const [isSystemStatusOpen, setIsSystemStatusOpen] = useState(false);
+
+  // Live transactions ledger state
+  const [transactions, setTransactions] = useState<Transaction[]>(DEMO_TRANSACTIONS);
+
+  // Live savings goals state
+  const [savingsGoals, setSavingsGoals] = useState<SavingsGoal[]>(DEMO_SAVINGS_GOALS);
+
+  // Dynamically compute financial summary based on selected period & added transactions
+  const dynamicSummary = useMemo(() => {
+    const base = DEMO_SUMMARIES_BY_DATE_FILTER[dateFilter] || DEMO_FINANCIAL_SUMMARY;
+    // Calculate delta from user-added transactions
+    const userAdded = transactions.filter((t) => !t.id.startsWith('tx-1'));
+    const addedIncome = userAdded.filter((t) => t.type === 'income').reduce((acc, t) => acc + t.amount, 0);
+    const addedExpense = userAdded.filter((t) => t.type === 'expense').reduce((acc, t) => acc + t.amount, 0);
+
+    return {
+      ...base,
+      totalBalance: base.totalBalance + addedIncome - addedExpense,
+      monthlyIncome: base.monthlyIncome + addedIncome,
+      monthlyExpenses: base.monthlyExpenses + addedExpense,
+      totalSavings: base.totalSavings + Math.max(0, addedIncome - addedExpense),
+    };
+  }, [dateFilter, transactions]);
+
+  const handleAddTransaction = (newTx: Transaction) => {
+    setTransactions((prev) => [newTx, ...prev]);
+  };
+
+  const handleAddGoal = (newGoal: SavingsGoal) => {
+    setSavingsGoals((prev) => [newGoal, ...prev]);
+  };
+
+  const renderActiveView = () => {
+    switch (currentTab) {
+      case 'dashboard':
+        return (
+          <DashboardView
+            transactions={transactions}
+            summary={dynamicSummary}
+            dateFilter={dateFilter}
+            goals={savingsGoals}
+            onViewAllTransactions={() => setCurrentTab('transactions')}
+            onOpenNewGoal={() => setIsAddGoalOpen(true)}
+          />
+        );
+      case 'transactions':
+        return (
+          <TransactionsView
+            transactions={transactions}
+            onOpenAddTransaction={() => setIsAddTxOpen(true)}
+          />
+        );
+      case 'budgeting':
+        return <BudgetingView />;
+      case 'savings':
+        return (
+          <SavingsGoalsView
+            goals={savingsGoals}
+            onOpenNewGoal={() => setIsAddGoalOpen(true)}
+          />
+        );
+      case 'bills':
+        return <BillsPaymentsView />;
+      case 'ai-assistant':
+        return <AIAssistantView />;
+      case 'reports':
+        return <ReportsAnalyticsView />;
+      case 'settings':
+        return <SettingsView onOpenSystemStatus={() => setIsSystemStatusOpen(true)} />;
+      default:
+        return (
+          <DashboardView
+            transactions={transactions}
+            summary={dynamicSummary}
+            dateFilter={dateFilter}
+            goals={savingsGoals}
+            onViewAllTransactions={() => setCurrentTab('transactions')}
+            onOpenNewGoal={() => setIsAddGoalOpen(true)}
+          />
+        );
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-slate-950 flex flex-col">
-      <Navbar />
+    <div className="flex h-screen overflow-hidden bg-navy-950 text-slate-100 font-sans">
+      {/* 1. Sidebar Navigation */}
+      <Sidebar
+        currentTab={currentTab}
+        onSelectTab={(tab) => setCurrentTab(tab)}
+        isOpenMobile={isOpenMobile}
+        onCloseMobile={() => setIsOpenMobile(false)}
+        isCollapsedDesktop={isCollapsedDesktop}
+        onToggleCollapseDesktop={() => setIsCollapsedDesktop(!isCollapsedDesktop)}
+        onOpenSystemStatus={() => setIsSystemStatusOpen(true)}
+      />
 
-      <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
-        {/* Hero Section */}
-        <div className="mb-10 text-center sm:text-left">
-          <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-xs font-medium mb-3">
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>Full-Stack Enterprise Architecture</span>
+      {/* 2. Main Content Canvas */}
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        {/* Header */}
+        <Header
+          onOpenMobileSidebar={() => setIsOpenMobile(true)}
+          onOpenAddTransaction={() => setIsAddTxOpen(true)}
+          dateFilter={dateFilter}
+          onChangeDateFilter={(df) => setDateFilter(df)}
+          searchQuery={searchQuery}
+          onSearchChange={(q) => setSearchQuery(q)}
+        />
+
+        {/* View Content Body */}
+        <main className="flex-1 overflow-y-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="max-w-7xl mx-auto">
+            {renderActiveView()}
           </div>
-          <h1 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
-            ArthaAI Platform Core
-          </h1>
-          <p className="mt-2 text-sm sm:text-base text-slate-400 max-w-2xl">
-            Cleanly decoupled architecture featuring a Vite + React + TypeScript frontend, 
-            Node.js + Express backend, Mongoose database foundation, and centralized error handling.
-          </p>
-        </div>
+        </main>
+      </div>
 
-        {/* Architecture Grid */}
-        <ArchitectureOverview />
+      {/* Modals */}
+      <AddTransactionModal
+        isOpen={isAddTxOpen}
+        onClose={() => setIsAddTxOpen(false)}
+        onAddTransaction={handleAddTransaction}
+      />
 
-        {/* Live Health Check Monitor */}
-        <HealthMonitor />
+      <AddGoalModal
+        isOpen={isAddGoalOpen}
+        onClose={() => setIsAddGoalOpen(false)}
+        onAddGoal={handleAddGoal}
+      />
 
-        {/* Commands & Scripts Reference */}
-        <div className="mt-10 p-5 rounded-2xl bg-slate-900/50 border border-slate-800">
-          <div className="flex items-center space-x-2 mb-3 text-slate-300">
-            <Terminal className="w-4 h-4 text-indigo-400" />
-            <h4 className="text-sm font-semibold">Standard Workspace Commands</h4>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 font-mono text-xs">
-            <div className="p-3 bg-slate-950 rounded-lg border border-slate-800/80">
-              <span className="text-slate-500 block mb-1"># Run Frontend Development</span>
-              <span className="text-emerald-400">npm run dev:frontend</span>
-            </div>
-            <div className="p-3 bg-slate-950 rounded-lg border border-slate-800/80">
-              <span className="text-slate-500 block mb-1"># Run Backend Development</span>
-              <span className="text-indigo-400">npm run dev:backend</span>
-            </div>
-            <div className="p-3 bg-slate-950 rounded-lg border border-slate-800/80">
-              <span className="text-slate-500 block mb-1"># Production Build Verification</span>
-              <span className="text-cyan-400">npm run build</span>
-            </div>
-          </div>
-        </div>
-      </main>
-
-      <footer className="border-t border-slate-900 py-6 text-center text-xs text-slate-500">
-        <p>ArthaAI Engineering Architecture &copy; {new Date().getFullYear()}. All systems operational.</p>
-      </footer>
+      <SystemStatusModal
+        isOpen={isSystemStatusOpen}
+        onClose={() => setIsSystemStatusOpen(false)}
+      />
     </div>
   );
 };
 
 export default App;
-
