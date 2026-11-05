@@ -126,17 +126,18 @@ export interface ExpenseCategoryShare {
   formattedAmount: string;
 }
 
-export interface SavingsGoal {
-  id: string;
-  name: string;
-  targetAmount: number;
-  currentAmount: number;
-  deadline: string;
-  category: string;
-  color: string;
-  iconName: string;
-  isDemoRecord?: boolean;
-}
+export type {
+  SavingsGoal,
+  GoalContribution,
+  SavingsOverview,
+  GoalAnalytics,
+  GoalStatus,
+  GoalPriority,
+  GoalHealthStatus,
+  CreateGoalInput,
+  UpdateGoalInput,
+  AddContributionInput,
+} from './savings';
 
 export interface FinancialHealthMetrics {
   score: number; // 0 - 100

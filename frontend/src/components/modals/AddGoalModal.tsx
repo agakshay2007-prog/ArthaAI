@@ -24,16 +24,44 @@ export const AddGoalModal: React.FC<AddGoalModalProps> = ({ isOpen, onClose, onA
 
     if (!name.trim() || isNaN(parsedTarget) || parsedTarget <= 0) return;
 
+    const targetAmountInCents = Math.round(parsedTarget * 100);
+    const currentAmountInCents = Math.round((isNaN(parsedCurrent) ? 0 : parsedCurrent) * 100);
+    const remainingAmountInCents = Math.max(0, targetAmountInCents - currentAmountInCents);
+    const progressPercentage =
+      targetAmountInCents > 0
+        ? Math.min(100, Math.round((currentAmountInCents / targetAmountInCents) * 100))
+        : 0;
+
     const newGoal: SavingsGoal = {
       id: `goal-${Date.now()}`,
       name: name.trim(),
+      description: '',
       targetAmount: parsedTarget,
+      targetAmountInCents,
       currentAmount: isNaN(parsedCurrent) ? 0 : parsedCurrent,
+      currentAmountInCents,
+      remainingAmount: remainingAmountInCents / 100,
+      remainingAmountInCents,
+      progressPercentage,
+      currency: 'USD',
+      startDate: new Date().toISOString().split('T')[0],
       deadline,
-      category,
+      category: category as any,
+      status: 'in_progress',
+      priority: 'medium',
       color: '#8b5cf6',
       iconName: 'Target',
+      milestones: [],
+      healthStatus: 'on_track',
+      daysRemaining: 30,
+      totalDays: 30,
+      daysElapsed: 0,
+      requiredMonthlySavings: remainingAmountInCents / 100,
+      requiredDailySavings: Math.round((remainingAmountInCents / 3000) * 100) / 100,
+      averageMonthlyContribution: 0,
       isDemoRecord: true,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     };
 
     onAddGoal(newGoal);

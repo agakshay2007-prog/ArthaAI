@@ -6,6 +6,7 @@ ArthaAI is an enterprise-grade full-stack personal finance and autonomous intell
 - **Phase 3: Enterprise Authentication & User Management**
 - **Phase 4: Persistent Financial Transaction Management**
 - **Phase 5: Complete Budget Management System & Predictive Velocity Analytics**
+- **Phase 6: Complete Savings Goals & Financial Planning Engine**
 
 ---
 
@@ -24,6 +25,7 @@ ArthaAI/
 │   │   │   ├── auth.controller.ts  # Registration, login, logout, profile & password
 │   │   │   ├── budget.controller.ts# Budget CRUD, overview, history & velocity analytics
 │   │   │   ├── health.controller.ts# Liveness, readiness, and diagnostics probes
+│   │   │   ├── savings.controller.ts # Savings goals CRUD, contributions & analytics
 │   │   │   └── transaction.controller.ts # Transaction CRUD, pagination, filters & summary
 │   │   ├── middleware/             # Express middlewares
 │   │   │   ├── auth.middleware.ts  # HttpOnly cookie & Bearer JWT authentication guard
@@ -32,6 +34,8 @@ ArthaAI/
 │   │   │   └── rateLimit.middleware.ts # IP rate limiter for sensitive auth routes
 │   │   ├── models/                 # Mongoose schemas & data models
 │   │   │   ├── budget.model.ts     # Budget model with integer minor units & threshold validation
+│   │   │   ├── goal-contribution.model.ts # Goal contribution sub-ledger model
+│   │   │   ├── savings-goal.model.ts # Savings goal model with milestones & minor units
 │   │   │   ├── transaction.model.ts# Transaction model with integer minor units (paise/cents)
 │   │   │   └── user.model.ts       # User model with bcrypt hashing & JSON sanitization
 │   │   ├── routes/                 # Express API routes
@@ -39,9 +43,11 @@ ArthaAI/
 │   │   │   ├── budget.route.ts     # /api/budgets budget endpoints
 │   │   │   ├── health.route.ts     # /api/health probes & telemetry
 │   │   │   ├── index.ts            # Central API route gateway
+│   │   │   ├── savings.route.ts    # /api/savings-goals endpoints
 │   │   │   └── transaction.route.ts# /api/transactions financial ledger endpoints
 │   │   ├── services/               # Core computational services
-│   │   │   └── budget.service.ts   # Dynamic transaction aggregation, thresholds & forecasting
+│   │   │   ├── budget.service.ts   # Dynamic transaction aggregation, thresholds & forecasting
+│   │   │   └── savings.service.ts  # Goal enrichment, milestones, velocity & recommendations
 │   │   ├── types/                  # Backend TypeScript interfaces & declarations
 │   │   │   └── index.ts
 │   │   ├── utils/                  # Cryptography, tokens & response formatters
@@ -51,9 +57,10 @@ ArthaAI/
 │   │   │   └── token.ts            # JWT signing, verification & cookie management
 │   │   ├── app.ts                  # Express application setup, security stack & cookies
 │   │   └── server.ts               # HTTP server bootstrap & graceful shutdown hooks
-│   ├── tests/                      # Automated test suites (55 tests passing)
+│   ├── tests/                      # Automated test suites (78 tests passing)
 │   │   ├── auth.test.ts            # 16 automated tests covering auth, JWT, bcrypt & DB degradation
 │   │   ├── budgets.test.ts         # 21 automated tests covering budget models, math & routes
+│   │   ├── savings-goals.test.ts   # 23 automated tests covering savings models, milestones & routes
 │   │   └── transactions.test.ts    # 18 automated tests covering CRUD, minor units, isolation & math
 │   ├── .env.example                # Sanitized backend environment template
 │   ├── package.json                # Backend dependencies, build & test scripts
@@ -82,7 +89,7 @@ ArthaAI/
 │   │   │   │   ├── FinancialHealthCard.tsx # Health score & savings rate metrics
 │   │   │   │   ├── MetricCards.tsx # Net worth, income, expenses & liquid savings
 │   │   │   │   ├── RecentTransactionsCard.tsx # Filterable recent ledger card
-│   │   │   │   └── SavingsGoalsCard.tsx # Target progress bars
+│   │   │   │   └── SavingsGoalsCard.tsx # Target progress bars & milestone badges
 │   │   │   ├── layout/             # Master app shell
 │   │   │   │   ├── Header.tsx      # Top bar with user profile, date filter & actions
 │   │   │   │   └── Sidebar.tsx     # Responsive navigation bar with live transaction badge
@@ -92,30 +99,40 @@ ArthaAI/
 │   │   │   │   ├── EditTransactionModal.tsx # Edit transaction details & amount
 │   │   │   │   ├── DeleteTransactionModal.tsx # Confirm permanent deletion
 │   │   │   │   └── SystemStatusModal.tsx # Live full-stack architecture probe
+│   │   │   ├── savings/            # Phase 6 Savings Goals & Financial Planning Components
+│   │   │   │   ├── AddContributionModal.tsx # Deposit/withdrawal modal with real-time balance simulation
+│   │   │   │   ├── AddSavingsGoalModal.tsx # Create goal form with category, deadline & color/icon picker
+│   │   │   │   ├── ContributionHistoryModal.tsx # Sub-ledger contribution list with reversal support
+│   │   │   │   ├── DeleteSavingsGoalModal.tsx # Safe goal deletion modal (preserves ledger transactions)
+│   │   │   │   ├── EditSavingsGoalModal.tsx # Edit goal target, deadline, priority & status
+│   │   │   │   ├── GoalAnalyticsModal.tsx # Predictive velocity AreaChart, milestones & run-rate
+│   │   │   │   └── SavingsGoalCard.tsx # Goal card with progress bar, milestone checkpoints & actions
 │   │   │   └── views/              # Full page views
 │   │   │       ├── AIAssistantView.tsx
 │   │   │       ├── BillsPaymentsView.tsx
-│   │   │       ├── BudgetingView.tsx # Redesigned master budget view with filters & alerts banner
+│   │   │       ├── BudgetingView.tsx # Master budget view with filters & alerts banner
 │   │   │       ├── DashboardView.tsx
 │   │   │       ├── ReportsAnalyticsView.tsx
-│   │   │       ├── SavingsGoalsView.tsx
+│   │   │       ├── SavingsGoalsView.tsx # Redesigned savings view with recommendations & metrics
 │   │   │       ├── SettingsView.tsx
 │   │   │       └── TransactionsView.tsx # Searchable, paginated transaction ledger & CSV export
 │   │   ├── context/                # React state context
 │   │   │   └── AuthContext.tsx     # Global authentication provider with guest mode
 │   │   ├── data/                   # Identified frontend demo data
-│   │   │   └── mockFinanceData.ts  # Demo transactions, budgets & dynamic enrichment helpers
+│   │   │   └── mockFinanceData.ts  # Demo transactions, budgets, savings goals & contributions
 │   │   ├── services/               # API clients
 │   │   │   ├── api.ts              # Health & telemetry service
 │   │   │   ├── auth.ts             # Auth REST API service with HttpOnly credentials
 │   │   │   ├── budgets.ts          # Budget REST API service with full CRUD & analytics
+│   │   │   ├── savings.ts          # Savings goals REST API service with contributions & analytics
 │   │   │   └── transactions.ts     # Persistent financial transaction API service
 │   │   ├── types/                  # Frontend TypeScript definitions
 │   │   │   ├── auth.ts             # Auth user, payloads & responses
 │   │   │   ├── budget.ts           # Phase 5 Budget models, analytics & alert interfaces
 │   │   │   ├── finance.ts          # Financial models & filter definitions
-│   │   │   └── index.ts            # System health interfaces
-│   │   ├── App.tsx                 # Root application with live ledger & budget state
+│   │   │   ├── index.ts            # System health interfaces
+│   │   │   └── savings.ts          # Phase 6 Savings goals, contributions & planning interfaces
+│   │   ├── App.tsx                 # Root application with live ledger, budget & savings state
 │   │   ├── index.css               # Tailwind CSS theme & glassmorphic utilities
 │   │   └── main.tsx                # Frontend bootstrap
 │   ├── .env.example                # Example frontend environment variables
@@ -130,6 +147,71 @@ ArthaAI/
 ├── package.json                    # Workspace script coordinator
 └── README.md                       # Comprehensive platform documentation
 ```
+
+---
+
+## 🎯 Phase 6: Complete Savings Goals & Financial Planning Engine
+
+### 1. Database Architecture
+- **`SavingsGoal` Model**:
+  - `userId`: `ObjectId` reference to `User`, strictly required and indexed. Every goal is cryptographically scoped to its authenticated owner.
+  - `name`: String (1–150 chars), trimmed.
+  - `description`: String (optional, up to 500 chars).
+  - `category`: Enum (`'Emergency Fund' | 'Retirement' | 'Real Estate' | 'Vehicle' | 'Education' | 'Vacation & Travel' | 'Wedding & Family' | 'Investments' | 'Major Purchase' | 'General Savings'`).
+  - `targetAmountInCents`: Integer minor units (e.g. 2500000 cents = $25,000.00 / ₹25,000.00). Eliminates IEEE 754 precision drift.
+  - `currentAmountInCents`: Integer minor units tracking accumulated savings.
+  - `currency`: String (default: `'USD'`).
+  - `startDate`: Date, beginning of goal journey.
+  - `deadline`: Date, boundary for completion target.
+  - `status`: Enum (`'in_progress' | 'completed' | 'paused' | 'cancelled'`).
+  - `priority`: Enum (`'low' | 'medium' | 'high' | 'urgent'`).
+  - `color`: Hex color string for card theme accents.
+  - `iconName`: Lucide icon identifier (e.g. `'Shield'`, `'Home'`, `'Zap'`, `'Compass'`).
+  - `milestones`: Array of `{ percentage: number, achievedAt: Date }` automatically tracking 25%, 50%, 75%, and 100% threshold crossings.
+  - **Indexes**:
+    - Compound: `{ userId: 1, status: 1 }` (fast retrieval of active vs completed goals).
+    - Compound: `{ userId: 1, deadline: 1 }` (sorting by nearest target date).
+    - Compound: `{ userId: 1, priority: 1 }` (priority filtering).
+
+- **`GoalContribution` Sub-Ledger Model**:
+  - `userId`: `ObjectId` reference to `User`, indexed.
+  - `goalId`: `ObjectId` reference to `SavingsGoal`, indexed.
+  - `amountInCents`: Positive integer minor units.
+  - `type`: Enum (`'deposit' | 'withdrawal'`).
+  - `contributionDate`: Date of ledger event.
+  - `notes`: Optional description.
+  - `transactionId`: Optional link to a corresponding Phase 4 ledger transaction.
+  - **Indexes**:
+    - Compound: `{ goalId: 1, contributionDate: -1 }` (chronological contribution history).
+    - Compound: `{ userId: 1, contributionDate: -1 }` (user-wide savings audit trail).
+
+### 2. Strict Separation of Concerns
+1. **Savings Goal Targets**: Pure objective caps setting financial aspirations and milestones.
+2. **Goal Sub-Ledger (`GoalContribution`)**: Granular deposit and withdrawal records tracking balance movements toward a specific goal.
+3. **Financial Bank Transactions (`Transaction`)**: Real-world financial account inflows/outflows from Phase 4.
+- **Transaction Safety**: Deleting a savings goal or reversing a contribution **never** deletes or alters financial bank transactions.
+
+### 3. Automatic Milestone Tracking
+- Automatically records milestone completion events at **25%**, **50%**, **75%**, and **100%** completion.
+- When deposits increase `currentAmountInCents` past a threshold, the milestone timestamp is recorded.
+- When withdrawals reduce `currentAmountInCents` below a threshold, the milestone is dynamically reverted.
+- Goals reaching 100% are automatically marked with `status: 'completed'`.
+
+### 4. Predictive Velocity Modeling & Financial Recommendations
+The planning engine cross-analyzes savings goals against historical cash flow from Phase 4 transactions:
+- **Required Monthly Savings**:
+  $$\text{requiredMonthlySavings} = \frac{\text{remainingAmount}}{\max(1, \text{monthsRemaining})}$$
+- **Run-Rate Projection**:
+  $$\text{projectedMonthsToFinish} = \frac{\text{remainingAmount}}{\text{averageMonthlyContribution}}$$
+- **Dynamic Health Status**:
+  - `completed`: Current balance $\ge$ Target amount.
+  - `ahead`: Current pace reaches target before deadline.
+  - `on_track`: Current pace meets target on deadline.
+  - `behind`: Current pace lags behind target deadline.
+  - `at_risk`: Deadline $< 30$ days with $< 50\%$ progress.
+- **Intelligent Financial Recommendations**:
+  - Compares total required monthly savings across all active goals against the user's actual monthly net cash surplus from Phase 4 transactions.
+  - Generates personalized advice (e.g. "Monthly Savings Velocity Surplus: Your average monthly net savings capacity of $3,280 is sufficient to fund all active targets").
 
 ---
 
@@ -186,6 +268,20 @@ The budget analytics engine computes:
 ---
 
 ## 📡 REST API Endpoints
+
+### Savings Goals Endpoints (`/api/savings-goals`)
+| Method | Endpoint | Access | Query Parameters / Payload | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| `POST` | `/api/savings-goals` | Authenticated | Body: `{ name, targetAmount, deadline, category, currentAmount?, startDate?, priority?, color?, iconName?, description? }` | Creates a new savings goal with milestones |
+| `GET` | `/api/savings-goals` | Authenticated | `?status=in_progress&priority=high&category=Vehicle&page=1&limit=20` | Returns enriched goals with velocities and health status |
+| `GET` | `/api/savings-goals/overview` | Authenticated | None | Returns total saved, targets, velocity recommendations and metrics |
+| `GET` | `/api/savings-goals/:id` | Authenticated | URL param `:id` | Retrieves a single savings goal with full enriched metrics |
+| `PATCH` | `/api/savings-goals/:id` | Authenticated | URL param `:id`, Body: partial updates | Updates goal targets, deadline, priority, status or styling |
+| `DELETE` | `/api/savings-goals/:id` | Authenticated | URL param `:id` | Deletes savings goal (ledger transactions strictly preserved) |
+| `POST` | `/api/savings-goals/:id/contributions` | Authenticated | URL param `:id`, Body: `{ amount, type, contributionDate?, notes? }` | Adds a deposit or withdrawal contribution to the goal sub-ledger |
+| `GET` | `/api/savings-goals/:id/contributions` | Authenticated | URL param `:id`, `?page=1&limit=20` | Returns paginated contribution history for the goal |
+| `DELETE` | `/api/savings-goals/:id/contributions/:cid` | Authenticated | URL params `:id`, `:cid` | Reverts a contribution and recalculates goal balance and milestones |
+| `GET` | `/api/savings-goals/:id/analytics` | Authenticated | URL param `:id` | Returns savings trajectory, velocity analysis, and milestone status |
 
 ### Budget Endpoints (`/api/budgets`)
 | Method | Endpoint | Access | Query Parameters / Payload | Description |
@@ -252,7 +348,7 @@ VITE_API_BASE_URL=http://localhost:5000
 
 ## 🚀 Execution & Testing
 
-### 1. Run Automated Unit & Integration Tests (55 Tests)
+### 1. Run Automated Unit & Integration Tests (78 Tests Passing)
 ```bash
 npm test
 # or
@@ -262,6 +358,7 @@ The test suite validates:
 - **Authentication (16 tests)**: Bcrypt hashing, JWT generation/verification/tamper rejection, cookie/Bearer auth, rate limiting, MongoDB degradation.
 - **Transactions (18 tests)**: CRUD operations, integer minor units, positive amount validation, cross-user isolation, financial summary arithmetic, category breakdowns.
 - **Budgets (21 tests)**: Minor-unit schema validation, negative limit rejection, invalid period/date rejection, dynamic utilization levels, alert deduplication, unauthenticated 401s, unconfigured MongoDB 503s.
+- **Savings Goals (23 tests)**: Goal schema validation, integer minor units conversion, negative target rejection, date ordering, sub-ledger contributions, goal enrichment, milestone calculations, unauthenticated 401s, unconfigured MongoDB 503s.
 
 ### 2. Production Build Verification
 ```bash
@@ -283,12 +380,13 @@ npm run dev:frontend
 ## 🛡️ Security Audit Checklist
 - [x] Every financial record strictly associates with authenticated `userId`.
 - [x] `userId` from request body is strictly discarded in favor of verified session context.
-- [x] Integer minor units prevent IEEE 754 financial calculation drift across transactions and budgets.
+- [x] Integer minor units prevent IEEE 754 financial calculation drift across transactions, budgets, and savings goals.
 - [x] Zero-amount and negative-amount limits rejected at model & controller levels.
 - [x] Cross-user access blocked via compound database ownership queries.
-- [x] Deleting a budget leaves historical transaction records completely intact.
+- [x] Deleting a budget or savings goal leaves historical financial transaction records completely intact.
+- [x] Sub-ledger contributions maintain historical chronological integrity with safe deletion & rollback.
 - [x] Sensitive authentication routes protected by IP rate limiting (15 req / 15 min).
 - [x] HttpOnly, SameSite cookies prevent credential access from browser JavaScript.
 - [x] CSV export generated safely from authorized records only.
-- [x] 100% test pass rate across 55 automated unit and integration tests.
+- [x] 100% test pass rate across 78 automated unit and integration tests.
 - [x] Zero secrets, tokens, or credentials stored in repository or frontend code.

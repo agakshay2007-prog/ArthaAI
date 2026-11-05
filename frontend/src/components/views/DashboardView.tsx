@@ -26,6 +26,7 @@ interface DashboardViewProps {
   onViewAllTransactions: () => void;
   onOpenNewGoal: () => void;
   onNavigateToBudgets?: () => void;
+  onNavigateToSavings?: () => void;
   isLive?: boolean;
   cashFlow?: MonthlyCashFlowPoint[];
   categoryBreakdown?: CategoryExpenseBreakdown[];
@@ -41,6 +42,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   onViewAllTransactions,
   onOpenNewGoal,
   onNavigateToBudgets = () => {},
+  onNavigateToSavings = () => {},
   isLive = false,
   cashFlow,
   categoryBreakdown,
@@ -66,7 +68,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             onViewAll={onViewAllTransactions}
             isLive={isLive}
           />
-          <SavingsGoalsCard goals={goals} onOpenNewGoal={onOpenNewGoal} />
+          <SavingsGoalsCard
+            goals={goals}
+            onOpenNewGoal={onOpenNewGoal}
+            onNavigateToSavings={onNavigateToSavings}
+          />
         </div>
 
         {/* Right Column: Budget Discipline, Financial Health & AI Assistant */}

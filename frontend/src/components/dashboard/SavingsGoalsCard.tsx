@@ -1,24 +1,28 @@
 import React from 'react';
-import { Target, Plus, Shield, Home, Zap, Compass } from 'lucide-react';
+import { Target, Plus, Shield, Home, Zap, Compass, ArrowRight } from 'lucide-react';
 import { DEMO_SAVINGS_GOALS } from '../../data/mockFinanceData';
-
 import { SavingsGoal } from '../../types/finance';
 
 interface SavingsGoalsCardProps {
   goals?: SavingsGoal[];
   onOpenNewGoal?: () => void;
+  onNavigateToSavings?: () => void;
 }
 
 export const SavingsGoalsCard: React.FC<SavingsGoalsCardProps> = ({
   goals = DEMO_SAVINGS_GOALS,
   onOpenNewGoal,
+  onNavigateToSavings = () => {},
 }) => {
   const iconMap: Record<string, React.ElementType> = {
     Shield,
     Home,
     Zap,
     Compass,
+    Target,
   };
+
+  const displayGoals = goals.slice(0, 4);
 
   return (
     <div className="glass-card rounded-2xl p-6 flex flex-col justify-between">
@@ -31,20 +35,28 @@ export const SavingsGoalsCard: React.FC<SavingsGoalsCardProps> = ({
             <h3 className="font-bold text-base text-white">Savings Targets & Goals</h3>
           </div>
 
-          <button
-            onClick={onOpenNewGoal}
-            className="flex items-center space-x-1 text-xs text-brand-400 hover:text-brand-300 font-semibold px-2 py-1 rounded-lg bg-brand-500/10 hover:bg-brand-500/20 transition cursor-pointer"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            <span>New Goal</span>
-          </button>
+          <div className="flex items-center space-x-2">
+            {onOpenNewGoal && (
+              <button
+                onClick={onOpenNewGoal}
+                className="flex items-center space-x-1 text-xs text-brand-400 hover:text-brand-300 font-semibold px-2 py-1 rounded-lg bg-brand-500/10 hover:bg-brand-500/20 transition cursor-pointer"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>New Goal</span>
+              </button>
+            )}
+          </div>
         </div>
         <p className="text-xs text-slate-400 mb-5">Track progress towards capital reserve milestones</p>
 
         <div className="space-y-4">
-          {goals.map((goal) => {
+          {displayGoals.map((goal) => {
             const Icon = iconMap[goal.iconName] || Target;
-            const progress = Math.min(Math.round((goal.currentAmount / goal.targetAmount) * 100), 100);
+            const progress = Math.min(Math.round(goal.progressPercentage || (goal.currentAmount / goal.targetAmount) * 100), 100);
+
+            const deadlineDisplay = goal.deadline.includes('-')
+              ? new Date(goal.deadline).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+              : goal.deadline;
 
             return (
               <div
@@ -61,7 +73,7 @@ export const SavingsGoalsCard: React.FC<SavingsGoalsCardProps> = ({
                     </div>
                     <div>
                       <div className="text-xs font-semibold text-white">{goal.name}</div>
-                      <div className="text-[10px] text-slate-400">Target by {goal.deadline}</div>
+                      <div className="text-[10px] text-slate-400">Target by {deadlineDisplay}</div>
                     </div>
                   </div>
                   <div className="text-right">
@@ -96,12 +108,16 @@ export const SavingsGoalsCard: React.FC<SavingsGoalsCardProps> = ({
         </div>
       </div>
 
-      <div className="mt-4 pt-3 border-t border-slate-800/80 text-center">
-        <span className="text-xs text-slate-400">
-          Monthly auto-allocation active: <strong className="text-brand-300 font-mono">$1,500.00/mo</strong>
-        </span>
+      <div className="mt-4 pt-3 border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-400">
+        <span>{goals.length} capital goals configured</span>
+        <button
+          onClick={onNavigateToSavings}
+          className="text-brand-400 hover:text-brand-300 font-semibold flex items-center space-x-1 transition cursor-pointer"
+        >
+          <span>View All Goals</span>
+          <ArrowRight className="w-3.5 h-3.5" />
+        </button>
       </div>
     </div>
   );
 };
-

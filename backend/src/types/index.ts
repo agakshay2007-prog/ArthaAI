@@ -217,3 +217,134 @@ export interface BudgetAnalyticsData {
   };
   recentTransactions: TransactionResponse[];
 }
+
+export type GoalCategory =
+  | 'Emergency Fund'
+  | 'Real Estate & Housing'
+  | 'Vehicle & Auto'
+  | 'Travel & Adventure'
+  | 'Retirement & Wealth'
+  | 'Education'
+  | 'Investments'
+  | 'Tech & Gadgets'
+  | 'Family & Life'
+  | 'Other';
+
+export type GoalStatus = 'in_progress' | 'completed' | 'paused' | 'cancelled';
+export type GoalPriority = 'low' | 'medium' | 'high' | 'urgent';
+export type GoalHealthStatus = 'ahead' | 'on_track' | 'behind' | 'at_risk' | 'completed';
+
+export interface GoalMilestoneItem {
+  percentage: number;
+  achievedAt: string;
+}
+
+export interface SavingsGoalResponse {
+  id: string;
+  userId: string;
+  name: string;
+  description?: string;
+  category: string;
+  targetAmountInCents: number;
+  targetAmount: number;
+  currentAmountInCents: number;
+  currentAmount: number;
+  remainingAmount: number;
+  remainingAmountInCents: number;
+  progressPercentage: number;
+  currency: string;
+  startDate: string;
+  deadline: string;
+  status: GoalStatus;
+  priority: GoalPriority;
+  color: string;
+  iconName: string;
+  completedAt?: string;
+  milestones: GoalMilestoneItem[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface GoalContributionResponse {
+  id: string;
+  userId: string;
+  goalId: string;
+  amountInCents: number;
+  amount: number;
+  type: 'deposit' | 'withdrawal';
+  contributionDate: string;
+  notes?: string;
+  transactionId?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SavingsGoalEnrichedResponse extends SavingsGoalResponse {
+  healthStatus: GoalHealthStatus;
+  daysRemaining: number;
+  totalDays: number;
+  daysElapsed: number;
+  requiredMonthlySavings: number;
+  requiredDailySavings: number;
+  averageMonthlyContribution: number;
+  projectedCompletionDate?: string;
+  contributionCount: number;
+  recentContributions: GoalContributionResponse[];
+}
+
+export interface SavingsRecommendation {
+  id: string;
+  goalId?: string;
+  goalName?: string;
+  type: 'acceleration' | 'feasibility' | 'milestone' | 'warning' | 'optimization';
+  title: string;
+  description: string;
+  suggestedAction: string;
+  impactAmount?: number;
+  priority: 'low' | 'medium' | 'high';
+}
+
+export interface SavingsOverviewData {
+  totalTargetAmountInCents: number;
+  totalTargetAmount: number;
+  totalSavedAmountInCents: number;
+  totalSavedAmount: number;
+  totalRemainingAmountInCents: number;
+  totalRemainingAmount: number;
+  overallProgressPercentage: number;
+  activeGoalsCount: number;
+  completedGoalsCount: number;
+  totalMonthlyRequiredSavings: number;
+  monthlySavingsCapacity: number;
+  netSavingsPaceRatio: number; // capacity / required
+  recommendations: SavingsRecommendation[];
+  topGoals: SavingsGoalEnrichedResponse[];
+}
+
+export interface GoalAnalyticsData {
+  goal: SavingsGoalEnrichedResponse;
+  contributionTimeline: {
+    date: string;
+    amount: number;
+    cumulativeSaved: number;
+    targetProgress: number;
+  }[];
+  monthlyRunRate: {
+    month: string;
+    contributed: number;
+    targetMonthly: number;
+  }[];
+  velocity: {
+    dailyAverage: number;
+    monthlyAverage: number;
+    monthsRemaining: number;
+    projectedMonthsToFinish: number;
+    isFeasibleByDeadline: boolean;
+    deficitOrSurplusPace: number;
+  };
+  milestonesStatus: {
+    percentage: number;
+    isAchieved: boolean;
+    achievedAt?: string;
+  }[];
+}

@@ -17,17 +17,21 @@ import { SettingsView } from './components/views/SettingsView';
 import { AddTransactionModal } from './components/modals/AddTransactionModal';
 import { EditTransactionModal } from './components/modals/EditTransactionModal';
 import { DeleteTransactionModal } from './components/modals/DeleteTransactionModal';
-import { AddGoalModal } from './components/modals/AddGoalModal';
 import { SystemStatusModal } from './components/modals/SystemStatusModal';
 import { AddBudgetModal } from './components/budgets/AddBudgetModal';
 import { EditBudgetModal } from './components/budgets/EditBudgetModal';
 import { DeleteBudgetModal } from './components/budgets/DeleteBudgetModal';
 import { BudgetAnalyticsModal } from './components/budgets/BudgetAnalyticsModal';
+import { AddSavingsGoalModal } from './components/savings/AddSavingsGoalModal';
+import { EditSavingsGoalModal } from './components/savings/EditSavingsGoalModal';
+import { DeleteSavingsGoalModal } from './components/savings/DeleteSavingsGoalModal';
+import { AddContributionModal } from './components/savings/AddContributionModal';
+import { ContributionHistoryModal } from './components/savings/ContributionHistoryModal';
+import { GoalAnalyticsModal } from './components/savings/GoalAnalyticsModal';
 import {
   NavigationTab,
   DateFilterOption,
   Transaction,
-  SavingsGoal,
   CreateTransactionInput,
   UpdateTransactionInput,
   TransactionSummary,
@@ -39,8 +43,18 @@ import {
   BudgetOverview,
 } from './types/budget';
 import {
+  SavingsGoal,
+  CreateGoalInput,
+  UpdateGoalInput,
+  AddContributionInput,
+  GoalContribution,
+  SavingsOverview,
+} from './types/savings';
+import {
   DEMO_TRANSACTIONS,
   DEMO_SAVINGS_GOALS,
+  DEMO_GOAL_CONTRIBUTIONS,
+  DEMO_SAVINGS_OVERVIEW,
   DEMO_SUMMARIES_BY_DATE_FILTER,
   DEMO_FINANCIAL_SUMMARY,
   DEMO_BUDGETS,
@@ -48,6 +62,7 @@ import {
 } from './data/mockFinanceData';
 import { transactionService } from './services/transactions';
 import { budgetService } from './services/budgets';
+import { savingsService } from './services/savings';
 
 const MainDashboardLayout: React.FC = () => {
   const { user, isGuestMode } = useAuth();
@@ -57,12 +72,11 @@ const MainDashboardLayout: React.FC = () => {
   const [isOpenMobile, setIsOpenMobile] = useState(false);
   const [isCollapsedDesktop, setIsCollapsedDesktop] = useState(false);
 
-  // Modals state
+  // System & Transaction Modals
   const [isAddTxOpen, setIsAddTxOpen] = useState(false);
   const [isEditTxOpen, setIsEditTxOpen] = useState(false);
   const [isDeleteTxOpen, setIsDeleteTxOpen] = useState(false);
   const [selectedTx, setSelectedTx] = useState<Transaction | null>(null);
-  const [isAddGoalOpen, setIsAddGoalOpen] = useState(false);
   const [isSystemStatusOpen, setIsSystemStatusOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
 
@@ -73,19 +87,32 @@ const MainDashboardLayout: React.FC = () => {
   const [isBudgetAnalyticsOpen, setIsBudgetAnalyticsOpen] = useState(false);
   const [selectedBudget, setSelectedBudget] = useState<Budget | null>(null);
 
+  // Savings Goal Modals state
+  const [isAddSavingsGoalOpen, setIsAddSavingsGoalOpen] = useState(false);
+  const [isEditSavingsGoalOpen, setIsEditSavingsGoalOpen] = useState(false);
+  const [isDeleteSavingsGoalOpen, setIsDeleteSavingsGoalOpen] = useState(false);
+  const [isAddContributionOpen, setIsAddContributionOpen] = useState(false);
+  const [isContributionHistoryOpen, setIsContributionHistoryOpen] = useState(false);
+  const [isGoalAnalyticsOpen, setIsGoalAnalyticsOpen] = useState(false);
+  const [selectedGoal, setSelectedGoal] = useState<SavingsGoal | null>(null);
+  const [contributionType, setContributionType] = useState<'deposit' | 'withdrawal'>('deposit');
+
   // Live transactions & summary state
   const [transactions, setTransactions] = useState<Transaction[]>(DEMO_TRANSACTIONS);
   const [liveSummary, setLiveSummary] = useState<TransactionSummary | null>(null);
   const [isLoadingTx, setIsLoadingTx] = useState(false);
   const [dbUnconfiguredWarning, setDbUnconfiguredWarning] = useState(false);
 
-  // Live savings goals state
-  const [savingsGoals, setSavingsGoals] = useState<SavingsGoal[]>(DEMO_SAVINGS_GOALS);
-
   // Budgets state
   const [rawBudgets, setRawBudgets] = useState<Budget[]>(DEMO_BUDGETS);
   const [budgetOverview, setBudgetOverview] = useState<BudgetOverview | null>(null);
   const [isLoadingBudgets, setIsLoadingBudgets] = useState(false);
+
+  // Savings goals state & demo sub-ledger
+  const [savingsGoals, setSavingsGoals] = useState<SavingsGoal[]>(DEMO_SAVINGS_GOALS);
+  const [savingsOverview, setSavingsOverview] = useState<SavingsOverview | null>(DEMO_SAVINGS_OVERVIEW);
+  const [isLoadingSavings, setIsLoadingSavings] = useState(false);
+  const [demoContributions, setDemoContributions] = useState<Record<string, GoalContribution[]>>(DEMO_GOAL_CONTRIBUTIONS);
 
   // Fetch live transactions and summary when user is authenticated (not guest mode)
   const fetchLedger = useCallback(async () => {
@@ -135,6 +162,27 @@ const MainDashboardLayout: React.FC = () => {
     }
   }, [isGuestMode, dbUnconfiguredWarning]);
 
+  // Fetch savings goals and overview
+  const fetchSavings = useCallback(async () => {
+    if (isGuestMode || dbUnconfiguredWarning) {
+      return;
+    }
+
+    setIsLoadingSavings(true);
+    try {
+      const [goalsRes, overviewRes] = await Promise.all([
+        savingsService.getGoals(),
+        savingsService.getSavingsOverview(),
+      ]);
+      setSavingsGoals(goalsRes.goals);
+      setSavingsOverview(overviewRes);
+    } catch {
+      // Degrade gracefully
+    } finally {
+      setIsLoadingSavings(false);
+    }
+  }, [isGuestMode, dbUnconfiguredWarning]);
+
   useEffect(() => {
     fetchLedger();
   }, [fetchLedger]);
@@ -142,6 +190,10 @@ const MainDashboardLayout: React.FC = () => {
   useEffect(() => {
     fetchBudgets();
   }, [fetchBudgets]);
+
+  useEffect(() => {
+    fetchSavings();
+  }, [fetchSavings]);
 
   // Compute enriched budgets dynamically (for guest mode or local live sync)
   const budgets = useMemo(() => {
@@ -346,8 +398,215 @@ const MainDashboardLayout: React.FC = () => {
     }
   };
 
-  const handleAddGoal = (newGoal: SavingsGoal) => {
-    setSavingsGoals((prev) => [newGoal, ...prev]);
+  // Handle adding a savings goal
+  const handleAddSavingsGoal = async (input: CreateGoalInput): Promise<boolean> => {
+    if (isGuestMode || dbUnconfiguredWarning) {
+      const target = input.targetAmount;
+      const current = input.currentAmount || 0;
+      const remaining = Math.max(0, target - current);
+      const progress = target > 0 ? Math.min(100, Math.round((current / target) * 1000) / 10) : 0;
+
+      const newGoal: SavingsGoal = {
+        id: `goal-user-${Date.now()}`,
+        name: input.name,
+        description: input.description,
+        category: input.category,
+        targetAmount: target,
+        targetAmountInCents: Math.round(target * 100),
+        currentAmount: current,
+        currentAmountInCents: Math.round(current * 100),
+        remainingAmount: remaining,
+        remainingAmountInCents: Math.round(remaining * 100),
+        progressPercentage: progress,
+        currency: input.currency || 'USD',
+        startDate: input.startDate || new Date().toISOString(),
+        deadline: input.deadline,
+        status: current >= target ? 'completed' : 'in_progress',
+        priority: input.priority || 'medium',
+        color: input.color || '#8b5cf6',
+        iconName: input.iconName || 'Target',
+        milestones: progress >= 25 ? [{ percentage: 25, achievedAt: new Date().toISOString() }] : [],
+        healthStatus: current >= target ? 'completed' : 'on_track',
+        daysRemaining: Math.max(1, Math.ceil((new Date(input.deadline).getTime() - Date.now()) / (1000 * 3600 * 24))),
+        totalDays: 365,
+        daysElapsed: 1,
+        requiredMonthlySavings: Math.round((remaining / 12) * 100) / 100,
+        requiredDailySavings: Math.round((remaining / 365) * 100) / 100,
+        averageMonthlyContribution: current,
+        contributionCount: current > 0 ? 1 : 0,
+        isDemoRecord: true,
+      };
+
+      if (current > 0) {
+        setDemoContributions((prev) => ({
+          ...prev,
+          [newGoal.id]: [
+            {
+              id: `gc-user-${Date.now()}`,
+              goalId: newGoal.id,
+              amount: current,
+              type: 'deposit',
+              contributionDate: new Date().toISOString().split('T')[0],
+              notes: 'Initial starting funds',
+            },
+          ],
+        }));
+      }
+
+      setSavingsGoals((prev) => [newGoal, ...prev]);
+      return true;
+    }
+
+    try {
+      const created = await savingsService.createGoal(input);
+      setSavingsGoals((prev) => [created, ...prev]);
+      savingsService.getSavingsOverview().then((o) => setSavingsOverview(o)).catch(() => {});
+      return true;
+    } catch (err: unknown) {
+      throw err;
+    }
+  };
+
+  // Handle updating a savings goal
+  const handleUpdateSavingsGoal = async (id: string, updates: UpdateGoalInput): Promise<boolean> => {
+    if (isGuestMode || dbUnconfiguredWarning) {
+      setSavingsGoals((prev) =>
+        prev.map((g) => {
+          if (g.id !== id) return g;
+          const target = updates.targetAmount !== undefined ? updates.targetAmount : g.targetAmount;
+          const remaining = Math.max(0, target - g.currentAmount);
+          const progress = target > 0 ? Math.min(100, Math.round((g.currentAmount / target) * 1000) / 10) : 0;
+          return {
+            ...g,
+            ...updates,
+            targetAmount: target,
+            remainingAmount: remaining,
+            progressPercentage: progress,
+            status: updates.status || (g.currentAmount >= target ? 'completed' : g.status),
+          };
+        })
+      );
+      return true;
+    }
+
+    try {
+      const updated = await savingsService.updateGoal(id, updates);
+      setSavingsGoals((prev) => prev.map((g) => (g.id === id ? updated : g)));
+      savingsService.getSavingsOverview().then((o) => setSavingsOverview(o)).catch(() => {});
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
+  // Handle deleting a savings goal
+  const handleDeleteSavingsGoal = async (id: string): Promise<boolean> => {
+    if (isGuestMode || dbUnconfiguredWarning) {
+      setSavingsGoals((prev) => prev.filter((g) => g.id !== id));
+      return true;
+    }
+
+    try {
+      await savingsService.deleteGoal(id);
+      setSavingsGoals((prev) => prev.filter((g) => g.id !== id));
+      savingsService.getSavingsOverview().then((o) => setSavingsOverview(o)).catch(() => {});
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
+  // Handle adding a contribution (deposit or withdrawal)
+  const handleAddContribution = async (goalId: string, input: AddContributionInput): Promise<boolean> => {
+    if (isGuestMode || dbUnconfiguredWarning) {
+      const newContrib: GoalContribution = {
+        id: `gc-user-${Date.now()}`,
+        goalId,
+        amount: input.amount,
+        type: input.type,
+        notes: input.notes,
+        contributionDate: input.contributionDate || new Date().toISOString().split('T')[0],
+      };
+
+      setDemoContributions((prev) => ({
+        ...prev,
+        [goalId]: [newContrib, ...(prev[goalId] || [])],
+      }));
+
+      setSavingsGoals((prev) =>
+        prev.map((g) => {
+          if (g.id !== goalId) return g;
+          const delta = input.type === 'deposit' ? input.amount : -input.amount;
+          const newCurrent = Math.max(0, g.currentAmount + delta);
+          const remaining = Math.max(0, g.targetAmount - newCurrent);
+          const progress = g.targetAmount > 0 ? Math.min(100, Math.round((newCurrent / g.targetAmount) * 1000) / 10) : 0;
+          const isComplete = newCurrent >= g.targetAmount;
+
+          return {
+            ...g,
+            currentAmount: newCurrent,
+            remainingAmount: remaining,
+            progressPercentage: progress,
+            status: isComplete ? 'completed' : g.status === 'completed' ? 'in_progress' : g.status,
+            healthStatus: isComplete ? 'completed' : g.healthStatus,
+            contributionCount: (g.contributionCount || 0) + 1,
+          };
+        })
+      );
+      return true;
+    }
+
+    try {
+      const res = await savingsService.addContribution(goalId, input);
+      setSavingsGoals((prev) => prev.map((g) => (g.id === goalId ? res.goal : g)));
+      savingsService.getSavingsOverview().then((o) => setSavingsOverview(o)).catch(() => {});
+      return true;
+    } catch (err: unknown) {
+      throw err;
+    }
+  };
+
+  // Handle deleting a contribution
+  const handleDeleteContribution = async (goalId: string, contributionId: string): Promise<boolean> => {
+    if (isGuestMode || dbUnconfiguredWarning) {
+      const existing = demoContributions[goalId] || [];
+      const targetContrib = existing.find((c) => c.id === contributionId);
+
+      if (targetContrib) {
+        setDemoContributions((prev) => ({
+          ...prev,
+          [goalId]: prev[goalId].filter((c) => c.id !== contributionId),
+        }));
+
+        setSavingsGoals((prev) =>
+          prev.map((g) => {
+            if (g.id !== goalId) return g;
+            const delta = targetContrib.type === 'deposit' ? -targetContrib.amount : targetContrib.amount;
+            const newCurrent = Math.max(0, g.currentAmount + delta);
+            const remaining = Math.max(0, g.targetAmount - newCurrent);
+            const progress = g.targetAmount > 0 ? Math.min(100, Math.round((newCurrent / g.targetAmount) * 1000) / 10) : 0;
+
+            return {
+              ...g,
+              currentAmount: newCurrent,
+              remainingAmount: remaining,
+              progressPercentage: progress,
+              contributionCount: Math.max(0, (g.contributionCount || 1) - 1),
+            };
+          })
+        );
+      }
+      return true;
+    }
+
+    try {
+      const updatedGoal = await savingsService.deleteContribution(goalId, contributionId);
+      setSavingsGoals((prev) => prev.map((g) => (g.id === goalId ? updatedGoal : g)));
+      savingsService.getSavingsOverview().then((o) => setSavingsOverview(o)).catch(() => {});
+      return true;
+    } catch {
+      return false;
+    }
   };
 
   const renderActiveView = () => {
@@ -362,8 +621,9 @@ const MainDashboardLayout: React.FC = () => {
             budgets={budgets}
             budgetOverview={budgetOverview}
             onViewAllTransactions={() => setCurrentTab('transactions')}
-            onOpenNewGoal={() => setIsAddGoalOpen(true)}
+            onOpenNewGoal={() => setIsAddSavingsGoalOpen(true)}
             onNavigateToBudgets={() => setCurrentTab('budgeting')}
+            onNavigateToSavings={() => setCurrentTab('savings')}
             isLive={!isGuestMode && !dbUnconfiguredWarning}
             cashFlow={liveSummary?.monthlyCashFlow}
             categoryBreakdown={liveSummary?.categoryBreakdown}
@@ -412,7 +672,36 @@ const MainDashboardLayout: React.FC = () => {
         return (
           <SavingsGoalsView
             goals={savingsGoals}
-            onOpenNewGoal={() => setIsAddGoalOpen(true)}
+            overview={savingsOverview}
+            isLoading={isLoadingSavings}
+            onOpenNewGoal={() => setIsAddSavingsGoalOpen(true)}
+            onAddFunds={(g) => {
+              setSelectedGoal(g);
+              setContributionType('deposit');
+              setIsAddContributionOpen(true);
+            }}
+            onWithdraw={(g) => {
+              setSelectedGoal(g);
+              setContributionType('withdrawal');
+              setIsAddContributionOpen(true);
+            }}
+            onViewHistory={(g) => {
+              setSelectedGoal(g);
+              setIsContributionHistoryOpen(true);
+            }}
+            onViewAnalytics={(g) => {
+              setSelectedGoal(g);
+              setIsGoalAnalyticsOpen(true);
+            }}
+            onEditGoal={(g) => {
+              setSelectedGoal(g);
+              setIsEditSavingsGoalOpen(true);
+            }}
+            onDeleteGoal={(g) => {
+              setSelectedGoal(g);
+              setIsDeleteSavingsGoalOpen(true);
+            }}
+            onRefresh={fetchSavings}
           />
         );
       case 'bills':
@@ -438,8 +727,9 @@ const MainDashboardLayout: React.FC = () => {
             budgets={budgets}
             budgetOverview={budgetOverview}
             onViewAllTransactions={() => setCurrentTab('transactions')}
-            onOpenNewGoal={() => setIsAddGoalOpen(true)}
+            onOpenNewGoal={() => setIsAddSavingsGoalOpen(true)}
             onNavigateToBudgets={() => setCurrentTab('budgeting')}
+            onNavigateToSavings={() => setCurrentTab('savings')}
             isLive={!isGuestMode && !dbUnconfiguredWarning}
             cashFlow={liveSummary?.monthlyCashFlow}
             categoryBreakdown={liveSummary?.categoryBreakdown}
@@ -480,7 +770,7 @@ const MainDashboardLayout: React.FC = () => {
         {dbUnconfiguredWarning && !isGuestMode && (
           <div className="bg-amber-500/10 border-b border-amber-500/20 px-4 py-2 text-xs text-amber-300 flex items-center justify-between">
             <span>
-              <strong>Advisory:</strong> MongoDB Atlas is currently unconfigured in <code>backend/.env</code>. Ledger operations are utilizing isolated demo storage.
+              <strong>Advisory:</strong> MongoDB Atlas is currently unconfigured in <code>backend/.env</code>. Ledger and savings operations are utilizing isolated demo storage.
             </span>
             <button
               onClick={() => setIsSystemStatusOpen(true)}
@@ -499,7 +789,7 @@ const MainDashboardLayout: React.FC = () => {
         </main>
       </div>
 
-      {/* Modals */}
+      {/* Transaction Modals */}
       <AddTransactionModal
         isOpen={isAddTxOpen}
         onClose={() => setIsAddTxOpen(false)}
@@ -526,12 +816,7 @@ const MainDashboardLayout: React.FC = () => {
         onConfirmDelete={handleDeleteTransaction}
       />
 
-      <AddGoalModal
-        isOpen={isAddGoalOpen}
-        onClose={() => setIsAddGoalOpen(false)}
-        onAddGoal={handleAddGoal}
-      />
-
+      {/* Budget Modals */}
       <AddBudgetModal
         isOpen={isAddBudgetOpen}
         onClose={() => setIsAddBudgetOpen(false)}
@@ -568,6 +853,65 @@ const MainDashboardLayout: React.FC = () => {
         }}
       />
 
+      {/* Savings Goal Modals */}
+      <AddSavingsGoalModal
+        isOpen={isAddSavingsGoalOpen}
+        onClose={() => setIsAddSavingsGoalOpen(false)}
+        onAddGoal={handleAddSavingsGoal}
+      />
+
+      <EditSavingsGoalModal
+        isOpen={isEditSavingsGoalOpen}
+        goal={selectedGoal}
+        onClose={() => {
+          setIsEditSavingsGoalOpen(false);
+          setSelectedGoal(null);
+        }}
+        onUpdateGoal={handleUpdateSavingsGoal}
+      />
+
+      <DeleteSavingsGoalModal
+        isOpen={isDeleteSavingsGoalOpen}
+        goal={selectedGoal}
+        onClose={() => {
+          setIsDeleteSavingsGoalOpen(false);
+          setSelectedGoal(null);
+        }}
+        onConfirmDelete={handleDeleteSavingsGoal}
+      />
+
+      <AddContributionModal
+        isOpen={isAddContributionOpen}
+        goal={selectedGoal}
+        defaultType={contributionType}
+        onClose={() => {
+          setIsAddContributionOpen(false);
+          setSelectedGoal(null);
+        }}
+        onSubmitContribution={handleAddContribution}
+      />
+
+      <ContributionHistoryModal
+        isOpen={isContributionHistoryOpen}
+        goal={selectedGoal}
+        demoContributions={selectedGoal ? demoContributions[selectedGoal.id] || [] : []}
+        onClose={() => {
+          setIsContributionHistoryOpen(false);
+          setSelectedGoal(null);
+        }}
+        onDeleteContribution={handleDeleteContribution}
+      />
+
+      <GoalAnalyticsModal
+        isOpen={isGoalAnalyticsOpen}
+        goal={selectedGoal}
+        onClose={() => {
+          setIsGoalAnalyticsOpen(false);
+          setSelectedGoal(null);
+        }}
+      />
+
+      {/* System & Profile Modals */}
       <SystemStatusModal
         isOpen={isSystemStatusOpen}
         onClose={() => setIsSystemStatusOpen(false)}

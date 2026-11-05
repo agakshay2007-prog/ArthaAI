@@ -3,6 +3,7 @@ import healthRouter from './health.route.js';
 import authRouter from './auth.route.js';
 import transactionRouter from './transaction.route.js';
 import budgetRouter from './budget.route.js';
+import savingsRouter from './savings.route.js';
 
 const router = Router();
 
@@ -43,6 +44,18 @@ router.get('/', (_req: Request, res: Response) => {
         analytics: 'GET /api/budgets/:id/analytics',
         history: 'GET /api/budgets/history',
       },
+      savingsGoals: {
+        list: 'GET /api/savings-goals',
+        create: 'POST /api/savings-goals',
+        getById: 'GET /api/savings-goals/:id',
+        update: 'PATCH /api/savings-goals/:id',
+        delete: 'DELETE /api/savings-goals/:id',
+        overview: 'GET /api/savings-goals/overview',
+        analytics: 'GET /api/savings-goals/:id/analytics',
+        addContribution: 'POST /api/savings-goals/:id/contributions',
+        getContributions: 'GET /api/savings-goals/:id/contributions',
+        deleteContribution: 'DELETE /api/savings-goals/:id/contributions/:contributionId',
+      },
     },
   });
 });
@@ -52,5 +65,6 @@ router.use('/health', healthRouter);
 router.use('/auth', authRouter);
 router.use('/transactions', transactionRouter);
 router.use('/budgets', budgetRouter);
+router.use('/savings-goals', savingsRouter);
 
 export default router;
