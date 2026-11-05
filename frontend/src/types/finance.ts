@@ -163,6 +163,21 @@ export interface BudgetCategory {
   color: string;
 }
 
+export type {
+  Bill,
+  BillPayment,
+  BillOverview,
+  BillReminderItem,
+  BillAnalytics,
+  CreateBillInput,
+  UpdateBillInput,
+  RecordPaymentInput,
+  BillCategory,
+  BillFrequency,
+  BillStatus,
+  BillSchedulePaymentStatus,
+} from './bill';
+
 export interface BillPaymentItem {
   id: string;
   title: string;

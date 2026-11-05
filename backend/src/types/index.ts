@@ -348,3 +348,119 @@ export interface GoalAnalyticsData {
     achievedAt?: string;
   }[];
 }
+
+// ----------------------------------------------------
+// Phase 7: Bills, Payments & Recurring Expenses Types
+// ----------------------------------------------------
+
+export type BillCategory =
+  | 'Electricity'
+  | 'Water'
+  | 'Internet'
+  | 'Mobile'
+  | 'Rent'
+  | 'Insurance'
+  | 'Education'
+  | 'Loan EMI'
+  | 'Streaming subscriptions'
+  | 'Transportation'
+  | 'Healthcare'
+  | 'Other';
+
+export type BillFrequency = 'one_time' | 'weekly' | 'monthly' | 'quarterly' | 'yearly';
+export type BillStatus = 'active' | 'paused' | 'cancelled' | 'completed';
+export type BillPaymentStatus = 'paid' | 'failed' | 'pending';
+export type BillSchedulePaymentStatus = 'paid' | 'upcoming' | 'due_today' | 'overdue' | 'partial';
+
+export interface BillResponse {
+  id: string;
+  userId: string;
+  name: string;
+  description?: string;
+  category: BillCategory | string;
+  provider?: string;
+  amountInCents: number;
+  amount: number;
+  currency: string;
+  frequency: BillFrequency;
+  startDate: string;
+  dueDate: string;
+  nextDueDate?: string;
+  autoRenew: boolean;
+  reminderDays: number[];
+  status: BillStatus;
+  paymentStatus: BillSchedulePaymentStatus;
+  totalPaidInCents: number;
+  totalPaid: number;
+  remainingDueInCents: number;
+  remainingDue: number;
+  daysUntilDue: number;
+  isOverdue: boolean;
+  lastPaymentDate?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface BillPaymentResponse {
+  id: string;
+  userId: string;
+  billId: string;
+  billName?: string;
+  amountInCents: number;
+  amount: number;
+  paymentDate: string;
+  status: BillPaymentStatus;
+  paymentMethod: string;
+  transactionId?: string;
+  referenceNumber?: string;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface BillReminderItem {
+  id: string;
+  billId: string;
+  billName: string;
+  category: string;
+  provider?: string;
+  amount: number;
+  dueDate: string;
+  daysUntilDue: number;
+  type: '7_days' | '3_days' | '1_day' | 'due_today' | 'overdue';
+  isUrgent: boolean;
+  message: string;
+}
+
+export interface BillOverviewData {
+  totalBills: number;
+  activeBillsCount: number;
+  paidBillsCount: number;
+  unpaidBillsCount: number;
+  overdueBillsCount: number;
+  upcomingPaymentsCount: number;
+  totalMonthlyRecurringInCents: number;
+  totalMonthlyRecurring: number;
+  totalPaidThisMonthInCents: number;
+  totalPaidThisMonth: number;
+  totalPendingAmountInCents: number;
+  totalPendingAmount: number;
+  reminders: BillReminderItem[];
+  upcomingBills: BillResponse[];
+}
+
+export interface BillAnalyticsData {
+  bill: BillResponse;
+  paymentHistory: BillPaymentResponse[];
+  totalPaidInCents: number;
+  totalPaid: number;
+  totalPendingInCents: number;
+  totalPending: number;
+  paymentCount: number;
+  monthlyTrend: {
+    month: string;
+    paid: number;
+  }[];
+  nextDueDate?: string;
+  recurringEstimateAnnual: number;
+}

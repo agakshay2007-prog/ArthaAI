@@ -6,6 +6,7 @@ import { SavingsGoalsCard } from '../dashboard/SavingsGoalsCard';
 import { RecentTransactionsCard } from '../dashboard/RecentTransactionsCard';
 import { AIAssistantCard } from '../dashboard/AIAssistantCard';
 import { BudgetOverviewCard } from '../dashboard/BudgetOverviewCard';
+import { UpcomingBillsCard } from '../dashboard/UpcomingBillsCard';
 import {
   Transaction,
   DateFilterOption,
@@ -14,6 +15,7 @@ import {
   CategoryExpenseBreakdown,
 } from '../../types/finance';
 import { Budget, BudgetOverview } from '../../types/budget';
+import { Bill, BillOverview } from '../../types/bill';
 import { DEMO_FINANCIAL_SUMMARY } from '../../data/mockFinanceData';
 
 interface DashboardViewProps {
@@ -27,6 +29,10 @@ interface DashboardViewProps {
   onOpenNewGoal: () => void;
   onNavigateToBudgets?: () => void;
   onNavigateToSavings?: () => void;
+  bills?: Bill[];
+  billsOverview?: BillOverview | null;
+  onNavigateToBills?: () => void;
+  onQuickPayBill?: (bill: Bill) => void;
   isLive?: boolean;
   cashFlow?: MonthlyCashFlowPoint[];
   categoryBreakdown?: CategoryExpenseBreakdown[];
@@ -43,6 +49,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   onOpenNewGoal,
   onNavigateToBudgets = () => {},
   onNavigateToSavings = () => {},
+  bills = [],
+  billsOverview = null,
+  onNavigateToBills = () => {},
+  onQuickPayBill = () => {},
   isLive = false,
   cashFlow,
   categoryBreakdown,
@@ -81,6 +91,12 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             overview={budgetOverview}
             budgets={budgets}
             onNavigateToBudgets={onNavigateToBudgets}
+          />
+          <UpcomingBillsCard
+            bills={bills}
+            overview={billsOverview}
+            onNavigateToBills={onNavigateToBills}
+            onQuickPay={onQuickPayBill}
           />
           <FinancialHealthCard />
           <AIAssistantCard />

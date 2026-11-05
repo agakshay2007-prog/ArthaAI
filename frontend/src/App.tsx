@@ -28,6 +28,20 @@ import { DeleteSavingsGoalModal } from './components/savings/DeleteSavingsGoalMo
 import { AddContributionModal } from './components/savings/AddContributionModal';
 import { ContributionHistoryModal } from './components/savings/ContributionHistoryModal';
 import { GoalAnalyticsModal } from './components/savings/GoalAnalyticsModal';
+import { AddBillModal } from './components/bills/AddBillModal';
+import { EditBillModal } from './components/bills/EditBillModal';
+import { DeleteBillModal } from './components/bills/DeleteBillModal';
+import { RecordPaymentModal } from './components/bills/RecordPaymentModal';
+import { PaymentHistoryModal } from './components/bills/PaymentHistoryModal';
+import { BillAnalyticsModal } from './components/bills/BillAnalyticsModal';
+import {
+  Bill,
+  BillOverview,
+  CreateBillInput,
+  UpdateBillInput,
+  RecordPaymentInput,
+} from './types/bill';
+import { billService } from './services/bills';
 import {
   NavigationTab,
   DateFilterOption,
@@ -58,7 +72,9 @@ import {
   DEMO_SUMMARIES_BY_DATE_FILTER,
   DEMO_FINANCIAL_SUMMARY,
   DEMO_BUDGETS,
-  enrichDemoBudgetsWithTransactions,
+  DEMO_BILLS,
+  DEMO_BILLS_OVERVIEW,
+    enrichDemoBudgetsWithTransactions,
 } from './data/mockFinanceData';
 import { transactionService } from './services/transactions';
 import { budgetService } from './services/budgets';
@@ -113,6 +129,18 @@ const MainDashboardLayout: React.FC = () => {
   const [savingsOverview, setSavingsOverview] = useState<SavingsOverview | null>(DEMO_SAVINGS_OVERVIEW);
   const [isLoadingSavings, setIsLoadingSavings] = useState(false);
   const [demoContributions, setDemoContributions] = useState<Record<string, GoalContribution[]>>(DEMO_GOAL_CONTRIBUTIONS);
+  // Bills state & modals
+  const [bills, setBills] = useState<Bill[]>(DEMO_BILLS);
+  const [billsOverview, setBillsOverview] = useState<BillOverview | null>(DEMO_BILLS_OVERVIEW);
+  const [isLoadingBills, setIsLoadingBills] = useState(false);
+  const [isAddBillOpen, setIsAddBillOpen] = useState(false);
+  const [isEditBillOpen, setIsEditBillOpen] = useState(false);
+  const [isDeleteBillOpen, setIsDeleteBillOpen] = useState(false);
+  const [isRecordPaymentOpen, setIsRecordPaymentOpen] = useState(false);
+  const [isPaymentHistoryOpen, setIsPaymentHistoryOpen] = useState(false);
+  const [isBillAnalyticsOpen, setIsBillAnalyticsOpen] = useState(false);
+  const [selectedBill, setSelectedBill] = useState<Bill | null>(null);
+
 
   // Fetch live transactions and summary when user is authenticated (not guest mode)
   const fetchLedger = useCallback(async () => {
@@ -194,6 +222,32 @@ const MainDashboardLayout: React.FC = () => {
   useEffect(() => {
     fetchSavings();
   }, [fetchSavings]);
+
+  // Fetch bills and overview
+  const fetchBills = useCallback(async () => {
+    if (isGuestMode || dbUnconfiguredWarning) {
+      return;
+    }
+
+    setIsLoadingBills(true);
+    try {
+      const [billsRes, overviewRes] = await Promise.all([
+        billService.getBills(),
+        billService.getBillOverview(),
+      ]);
+      setBills(billsRes.bills);
+      setBillsOverview(overviewRes);
+    } catch {
+      // Degrade gracefully
+    } finally {
+      setIsLoadingBills(false);
+    }
+  }, [isGuestMode, dbUnconfiguredWarning]);
+
+  useEffect(() => {
+    fetchBills();
+  }, [fetchBills]);
+
 
   // Compute enriched budgets dynamically (for guest mode or local live sync)
   const budgets = useMemo(() => {
@@ -609,21 +663,146 @@ const MainDashboardLayout: React.FC = () => {
     }
   };
 
+
+  // Handle creating a new bill
+  const handleAddBill = async (input: CreateBillInput): Promise<void> => {
+    if (isGuestMode || dbUnconfiguredWarning) {
+      const newBill: Bill = {
+        id: `bill-${Date.now()}`,
+        name: input.name,
+        category: input.category,
+        provider: input.provider,
+        amount: input.amount,
+        currency: input.currency || 'USD',
+        frequency: input.frequency,
+        startDate: input.startDate || new Date().toISOString(),
+        dueDate: input.dueDate,
+        autoRenew: Boolean(input.autoRenew),
+        reminderDays: input.reminderDays || [7, 3, 1],
+        status: 'active',
+        paymentStatus: 'upcoming',
+        totalPaid: 0,
+        remainingDue: input.amount,
+        daysUntilDue: Math.ceil((new Date(input.dueDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)),
+        isOverdue: false,
+        isDemoRecord: true,
+      };
+      setBills((prev) => [newBill, ...prev]);
+      return;
+    }
+
+    const created = await billService.createBill(input);
+    setBills((prev) => [created, ...prev]);
+    billService.getBillOverview().then((o) => setBillsOverview(o)).catch(() => {});
+  };
+
+  // Handle updating an existing bill
+  const handleUpdateBill = async (id: string, input: UpdateBillInput): Promise<void> => {
+    if (isGuestMode || dbUnconfiguredWarning) {
+      setBills((prev) =>
+        prev.map((b) => (b.id === id ? { ...b, ...input, remainingDue: input.amount ?? b.amount } : b))
+      );
+      return;
+    }
+
+    const updated = await billService.updateBill(id, input);
+    setBills((prev) => prev.map((b) => (b.id === id ? updated : b)));
+    billService.getBillOverview().then((o) => setBillsOverview(o)).catch(() => {});
+  };
+
+  // Handle deleting or archiving a bill
+  const handleDeleteBill = async (id: string, archive: boolean): Promise<void> => {
+    if (isGuestMode || dbUnconfiguredWarning) {
+      if (archive) {
+        setBills((prev) => prev.map((b) => (b.id === id ? { ...b, status: 'cancelled' } : b)));
+      } else {
+        setBills((prev) => prev.filter((b) => b.id !== id));
+      }
+      return;
+    }
+
+    await billService.deleteBill(id, archive);
+    if (archive) {
+      setBills((prev) => prev.map((b) => (b.id === id ? { ...b, status: 'cancelled' } : b)));
+    } else {
+      setBills((prev) => prev.filter((b) => b.id !== id));
+    }
+    billService.getBillOverview().then((o) => setBillsOverview(o)).catch(() => {});
+  };
+
+  // Handle recording a bill payment
+  const handleRecordPayment = async (billId: string, input: RecordPaymentInput): Promise<void> => {
+    if (isGuestMode || dbUnconfiguredWarning) {
+      setBills((prev) =>
+        prev.map((b) => {
+          if (b.id !== billId) return b;
+          const newPaid = b.totalPaid + input.amount;
+          const remaining = Math.max(0, b.amount - newPaid);
+          const paymentStatus = remaining <= 0 ? 'paid' : 'partial';
+          return {
+            ...b,
+            totalPaid: newPaid,
+            remainingDue: remaining,
+            paymentStatus,
+            lastPaymentDate: input.paymentDate || new Date().toISOString(),
+          };
+        })
+      );
+
+      if (input.createTransaction) {
+        const targetBill = bills.find((b) => b.id === billId);
+        const newTx: Transaction = {
+          id: `tx-${Date.now()}`,
+          title: `Bill Payment: ${targetBill?.name || 'Bill'}`,
+          amount: input.amount,
+          type: 'expense',
+          category: targetBill?.category || 'Utilities',
+          merchant: targetBill?.provider || targetBill?.name || 'Biller',
+          paymentMethod: input.paymentMethod || 'bank_transfer',
+          date: new Date(input.paymentDate || Date.now()).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+          status: 'completed',
+          account: 'Apple Card (...1092)',
+          isDemoRecord: true,
+        };
+        setTransactions((prev) => [newTx, ...prev]);
+      }
+      return;
+    }
+
+    const res = await billService.recordPayment(billId, input);
+    setBills((prev) => prev.map((b) => (b.id === billId ? res.bill : b)));
+    billService.getBillOverview().then((o) => setBillsOverview(o)).catch(() => {});
+    if (input.createTransaction) {
+      fetchLedger();
+    }
+  };
+
+  const handlePaymentReverted = () => {
+    fetchBills();
+  };
+
   const renderActiveView = () => {
     switch (currentTab) {
       case 'dashboard':
         return (
-          <DashboardView
+                    <DashboardView
             transactions={transactions}
             summary={dynamicSummary}
             dateFilter={dateFilter}
             goals={savingsGoals}
             budgets={budgets}
             budgetOverview={budgetOverview}
+            bills={bills}
+            billsOverview={billsOverview}
             onViewAllTransactions={() => setCurrentTab('transactions')}
             onOpenNewGoal={() => setIsAddSavingsGoalOpen(true)}
             onNavigateToBudgets={() => setCurrentTab('budgeting')}
             onNavigateToSavings={() => setCurrentTab('savings')}
+            onNavigateToBills={() => setCurrentTab('bills')}
+            onQuickPayBill={(b) => {
+              setSelectedBill(b);
+              setIsRecordPaymentOpen(true);
+            }}
             isLive={!isGuestMode && !dbUnconfiguredWarning}
             cashFlow={liveSummary?.monthlyCashFlow}
             categoryBreakdown={liveSummary?.categoryBreakdown}
@@ -705,7 +884,35 @@ const MainDashboardLayout: React.FC = () => {
           />
         );
       case 'bills':
-        return <BillsPaymentsView />;
+        return (
+          <BillsPaymentsView
+            bills={bills}
+            overview={billsOverview}
+            isLoading={isLoadingBills}
+            onOpenNewBill={() => setIsAddBillOpen(true)}
+            onRecordPayment={(b) => {
+              setSelectedBill(b);
+              setIsRecordPaymentOpen(true);
+            }}
+            onViewHistory={(b) => {
+              setSelectedBill(b);
+              setIsPaymentHistoryOpen(true);
+            }}
+            onViewAnalytics={(b) => {
+              setSelectedBill(b);
+              setIsBillAnalyticsOpen(true);
+            }}
+            onEdit={(b) => {
+              setSelectedBill(b);
+              setIsEditBillOpen(true);
+            }}
+            onDelete={(b) => {
+              setSelectedBill(b);
+              setIsDeleteBillOpen(true);
+            }}
+            onRefresh={fetchBills}
+          />
+        );
       case 'ai-assistant':
         return <AIAssistantView />;
       case 'reports':
@@ -719,17 +926,24 @@ const MainDashboardLayout: React.FC = () => {
         );
       default:
         return (
-          <DashboardView
+                    <DashboardView
             transactions={transactions}
             summary={dynamicSummary}
             dateFilter={dateFilter}
             goals={savingsGoals}
             budgets={budgets}
             budgetOverview={budgetOverview}
+            bills={bills}
+            billsOverview={billsOverview}
             onViewAllTransactions={() => setCurrentTab('transactions')}
             onOpenNewGoal={() => setIsAddSavingsGoalOpen(true)}
             onNavigateToBudgets={() => setCurrentTab('budgeting')}
             onNavigateToSavings={() => setCurrentTab('savings')}
+            onNavigateToBills={() => setCurrentTab('bills')}
+            onQuickPayBill={(b) => {
+              setSelectedBill(b);
+              setIsRecordPaymentOpen(true);
+            }}
             isLive={!isGuestMode && !dbUnconfiguredWarning}
             cashFlow={liveSummary?.monthlyCashFlow}
             categoryBreakdown={liveSummary?.categoryBreakdown}
@@ -908,6 +1122,63 @@ const MainDashboardLayout: React.FC = () => {
         onClose={() => {
           setIsGoalAnalyticsOpen(false);
           setSelectedGoal(null);
+        }}
+      />
+
+      
+      {/* Phase 7: Bills & Payments Modals */}
+      <AddBillModal
+        isOpen={isAddBillOpen}
+        onClose={() => setIsAddBillOpen(false)}
+        onAddBill={handleAddBill}
+      />
+
+      <EditBillModal
+        isOpen={isEditBillOpen}
+        bill={selectedBill}
+        onClose={() => {
+          setIsEditBillOpen(false);
+          setSelectedBill(null);
+        }}
+        onUpdateBill={handleUpdateBill}
+      />
+
+      <DeleteBillModal
+        isOpen={isDeleteBillOpen}
+        bill={selectedBill}
+        onClose={() => {
+          setIsDeleteBillOpen(false);
+          setSelectedBill(null);
+        }}
+        onDeleteBill={handleDeleteBill}
+      />
+
+      <RecordPaymentModal
+        isOpen={isRecordPaymentOpen}
+        bill={selectedBill}
+        onClose={() => {
+          setIsRecordPaymentOpen(false);
+          setSelectedBill(null);
+        }}
+        onRecordPayment={handleRecordPayment}
+      />
+
+      <PaymentHistoryModal
+        isOpen={isPaymentHistoryOpen}
+        bill={selectedBill}
+        onClose={() => {
+          setIsPaymentHistoryOpen(false);
+          setSelectedBill(null);
+        }}
+        onPaymentReverted={handlePaymentReverted}
+      />
+
+      <BillAnalyticsModal
+        isOpen={isBillAnalyticsOpen}
+        bill={selectedBill}
+        onClose={() => {
+          setIsBillAnalyticsOpen(false);
+          setSelectedBill(null);
         }}
       />
 

@@ -4,6 +4,7 @@ import authRouter from './auth.route.js';
 import transactionRouter from './transaction.route.js';
 import budgetRouter from './budget.route.js';
 import savingsRouter from './savings.route.js';
+import billRouter from './bill.route.js';
 
 const router = Router();
 
@@ -56,6 +57,19 @@ router.get('/', (_req: Request, res: Response) => {
         getContributions: 'GET /api/savings-goals/:id/contributions',
         deleteContribution: 'DELETE /api/savings-goals/:id/contributions/:contributionId',
       },
+      bills: {
+        list: 'GET /api/bills',
+        create: 'POST /api/bills',
+        getById: 'GET /api/bills/:id',
+        update: 'PATCH /api/bills/:id',
+        delete: 'DELETE /api/bills/:id',
+        overview: 'GET /api/bills/overview',
+        upcoming: 'GET /api/bills/upcoming',
+        recordPayment: 'POST /api/bills/:id/payments',
+        getPayments: 'GET /api/bills/:id/payments',
+        revertPayment: 'DELETE /api/bills/:id/payments/:paymentId',
+        analytics: 'GET /api/bills/:id/analytics',
+      },
     },
   });
 });
@@ -66,5 +80,6 @@ router.use('/auth', authRouter);
 router.use('/transactions', transactionRouter);
 router.use('/budgets', budgetRouter);
 router.use('/savings-goals', savingsRouter);
+router.use('/bills', billRouter);
 
 export default router;
