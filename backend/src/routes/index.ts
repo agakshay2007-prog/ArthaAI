@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import healthRouter from './health.route.js';
 import authRouter from './auth.route.js';
 import transactionRouter from './transaction.route.js';
+import budgetRouter from './budget.route.js';
 
 const router = Router();
 
@@ -32,6 +33,16 @@ router.get('/', (_req: Request, res: Response) => {
         summary: 'GET /api/transactions/summary',
         categories: 'GET /api/transactions/categories',
       },
+      budgets: {
+        list: 'GET /api/budgets',
+        create: 'POST /api/budgets',
+        getById: 'GET /api/budgets/:id',
+        update: 'PATCH /api/budgets/:id',
+        delete: 'DELETE /api/budgets/:id',
+        overview: 'GET /api/budgets/overview',
+        analytics: 'GET /api/budgets/:id/analytics',
+        history: 'GET /api/budgets/history',
+      },
     },
   });
 });
@@ -40,5 +51,6 @@ router.get('/', (_req: Request, res: Response) => {
 router.use('/health', healthRouter);
 router.use('/auth', authRouter);
 router.use('/transactions', transactionRouter);
+router.use('/budgets', budgetRouter);
 
 export default router;

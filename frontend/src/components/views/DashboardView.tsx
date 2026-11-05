@@ -5,6 +5,7 @@ import { FinancialHealthCard } from '../dashboard/FinancialHealthCard';
 import { SavingsGoalsCard } from '../dashboard/SavingsGoalsCard';
 import { RecentTransactionsCard } from '../dashboard/RecentTransactionsCard';
 import { AIAssistantCard } from '../dashboard/AIAssistantCard';
+import { BudgetOverviewCard } from '../dashboard/BudgetOverviewCard';
 import {
   Transaction,
   DateFilterOption,
@@ -12,6 +13,7 @@ import {
   MonthlyCashFlowPoint,
   CategoryExpenseBreakdown,
 } from '../../types/finance';
+import { Budget, BudgetOverview } from '../../types/budget';
 import { DEMO_FINANCIAL_SUMMARY } from '../../data/mockFinanceData';
 
 interface DashboardViewProps {
@@ -19,8 +21,11 @@ interface DashboardViewProps {
   summary: typeof DEMO_FINANCIAL_SUMMARY;
   dateFilter: DateFilterOption;
   goals?: SavingsGoal[];
+  budgets?: Budget[];
+  budgetOverview?: BudgetOverview | null;
   onViewAllTransactions: () => void;
   onOpenNewGoal: () => void;
+  onNavigateToBudgets?: () => void;
   isLive?: boolean;
   cashFlow?: MonthlyCashFlowPoint[];
   categoryBreakdown?: CategoryExpenseBreakdown[];
@@ -31,8 +36,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   summary,
   dateFilter,
   goals,
+  budgets = [],
+  budgetOverview = null,
   onViewAllTransactions,
   onOpenNewGoal,
+  onNavigateToBudgets = () => {},
   isLive = false,
   cashFlow,
   categoryBreakdown,
@@ -61,8 +69,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <SavingsGoalsCard goals={goals} onOpenNewGoal={onOpenNewGoal} />
         </div>
 
-        {/* Right Column: Financial Health & AI Assistant Copilot */}
+        {/* Right Column: Budget Discipline, Financial Health & AI Assistant */}
         <div className="space-y-6">
+          <BudgetOverviewCard
+            overview={budgetOverview}
+            budgets={budgets}
+            onNavigateToBudgets={onNavigateToBudgets}
+          />
           <FinancialHealthCard />
           <AIAssistantCard />
         </div>

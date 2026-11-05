@@ -8,6 +8,7 @@ import {
   BillPaymentItem,
   DateFilterOption,
 } from '../types/finance';
+import { Budget, BudgetAlert, BudgetStatus } from '../types/budget';
 
 /**
  * NOTICE: Clearly identified frontend demonstration records.
@@ -323,6 +324,195 @@ export const DEMO_BUDGET_CATEGORIES: BudgetCategory[] = [
   { id: 'b-5', category: 'Entertainment & Leisure', allocatedAmount: 500, spentAmount: 460, color: '#f59e0b' },
   { id: 'b-6', category: 'Utilities & Bills', allocatedAmount: 500, spentAmount: 430, color: '#10b981' },
 ];
+
+export const DEMO_BUDGETS: Budget[] = [
+  {
+    id: 'demo-b-1',
+    name: 'Housing & Rent Cap',
+    period: 'monthly',
+    category: 'Housing & Rent',
+    limit: 2200,
+    currency: 'USD',
+    startDate: '2026-11-01',
+    endDate: '2026-11-30',
+    alertThresholds: [50, 75, 90, 100],
+    isActive: true,
+    actualSpent: 1850,
+    remaining: 350,
+    utilizationPercentage: 84.1,
+    status: 'warning',
+    transactionCount: 1,
+    isDemoRecord: true,
+  },
+  {
+    id: 'demo-b-2',
+    name: 'Groceries & Dining Limit',
+    period: 'monthly',
+    category: 'Food & Dining',
+    limit: 1100,
+    currency: 'USD',
+    startDate: '2026-11-01',
+    endDate: '2026-11-30',
+    alertThresholds: [50, 75, 90, 100],
+    isActive: true,
+    actualSpent: 742.85,
+    remaining: 357.15,
+    utilizationPercentage: 67.5,
+    status: 'moderate',
+    transactionCount: 3,
+    isDemoRecord: true,
+  },
+  {
+    id: 'demo-b-3',
+    name: 'Cloud Software & SaaS',
+    period: 'monthly',
+    category: 'Technology & SaaS',
+    limit: 650,
+    currency: 'USD',
+    startDate: '2026-11-01',
+    endDate: '2026-11-30',
+    alertThresholds: [50, 75, 90, 100],
+    isActive: true,
+    actualSpent: 599.0,
+    remaining: 51.0,
+    utilizationPercentage: 92.2,
+    status: 'critical',
+    transactionCount: 4,
+    isDemoRecord: true,
+  },
+  {
+    id: 'demo-b-4',
+    name: 'Metro & Supercharging',
+    period: 'monthly',
+    category: 'Transportation',
+    limit: 450,
+    currency: 'USD',
+    startDate: '2026-11-01',
+    endDate: '2026-11-30',
+    alertThresholds: [50, 75, 90, 100],
+    isActive: true,
+    actualSpent: 312.8,
+    remaining: 137.2,
+    utilizationPercentage: 69.5,
+    status: 'moderate',
+    transactionCount: 2,
+    isDemoRecord: true,
+  },
+  {
+    id: 'demo-b-5',
+    name: 'Entertainment & Outings',
+    period: 'monthly',
+    category: 'Entertainment & Leisure',
+    limit: 400,
+    currency: 'USD',
+    startDate: '2026-11-01',
+    endDate: '2026-11-30',
+    alertThresholds: [50, 75, 90, 100],
+    isActive: true,
+    actualSpent: 420.0,
+    remaining: -20.0,
+    utilizationPercentage: 105.0,
+    status: 'exceeded',
+    transactionCount: 3,
+    isDemoRecord: true,
+  },
+  {
+    id: 'demo-b-6',
+    name: 'Utilities & Fiber Internet',
+    period: 'monthly',
+    category: 'Utilities & Bills',
+    limit: 350,
+    currency: 'USD',
+    startDate: '2026-11-01',
+    endDate: '2026-11-30',
+    alertThresholds: [50, 75, 90, 100],
+    isActive: true,
+    actualSpent: 185.0,
+    remaining: 165.0,
+    utilizationPercentage: 52.9,
+    status: 'moderate',
+    transactionCount: 2,
+    isDemoRecord: true,
+  },
+  {
+    id: 'demo-b-7',
+    name: 'Annual Travel & Vacation Fund',
+    period: 'yearly',
+    category: 'Entertainment & Leisure',
+    limit: 5000,
+    currency: 'USD',
+    startDate: '2026-01-01',
+    endDate: '2026-12-31',
+    alertThresholds: [50, 75, 90, 100],
+    isActive: true,
+    actualSpent: 2150.0,
+    remaining: 2850.0,
+    utilizationPercentage: 43.0,
+    status: 'normal',
+    transactionCount: 5,
+    isDemoRecord: true,
+  },
+];
+
+export const enrichDemoBudgetsWithTransactions = (
+  budgets: Budget[],
+  transactions: Transaction[]
+): Budget[] => {
+  return budgets.map((b) => {
+    const matching = transactions.filter((t) => {
+      const isExp = t.type === 'expense';
+      const isCat = t.category.toLowerCase() === b.category.toLowerCase();
+      return isExp && isCat;
+    });
+
+    const actualSpent = matching.reduce((acc, t) => acc + t.amount, 0);
+    const remaining = b.limit - actualSpent;
+    const utilizationPercentage = b.limit > 0 ? Math.round((actualSpent / b.limit) * 1000) / 10 : 0;
+
+    let status: BudgetStatus = 'normal';
+    if (utilizationPercentage >= 100) status = 'exceeded';
+    else if (utilizationPercentage >= 90) status = 'critical';
+    else if (utilizationPercentage >= 75) status = 'warning';
+    else if (utilizationPercentage >= 50) status = 'moderate';
+
+    const alerts: BudgetAlert[] = [];
+    if (utilizationPercentage >= 50) {
+      alerts.push({
+        budgetId: b.id,
+        budgetName: b.name,
+        category: b.category,
+        threshold:
+          utilizationPercentage >= 100
+            ? 100
+            : utilizationPercentage >= 90
+            ? 90
+            : utilizationPercentage >= 75
+            ? 75
+            : 50,
+        level: status,
+        message:
+          utilizationPercentage >= 100
+            ? `Budget for "${b.category}" exceeded by $${Math.abs(remaining).toFixed(2)}.`
+            : `Budget for "${b.category}" has reached ${Math.round(utilizationPercentage)}% ($${remaining.toFixed(2)} remaining).`,
+        utilizationPercentage,
+        limit: b.limit,
+        actualSpent: Math.round(actualSpent * 100) / 100,
+        remaining: Math.round(remaining * 100) / 100,
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    return {
+      ...b,
+      actualSpent: Math.round(actualSpent * 100) / 100,
+      remaining: Math.round(remaining * 100) / 100,
+      utilizationPercentage,
+      status,
+      transactionCount: matching.length,
+      alerts,
+    };
+  });
+};
 
 export const DEMO_BILL_PAYMENTS: BillPaymentItem[] = [
   {

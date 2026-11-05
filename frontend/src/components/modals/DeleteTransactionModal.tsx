@@ -82,3 +82,4 @@ export const DeleteTransactionModal: React.FC<DeleteTransactionModalProps> = ({
     </div>
   );
 };
+

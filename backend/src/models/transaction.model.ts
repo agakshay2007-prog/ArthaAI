@@ -177,3 +177,4 @@ transactionSchema.statics.centsToAmount = centsToAmount;
 export const Transaction: ITransactionModel =
   (mongoose.models.Transaction as ITransactionModel) ||
   mongoose.model<ITransactionDocument, ITransactionModel>('Transaction', transactionSchema);
+

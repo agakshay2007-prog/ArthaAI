@@ -19,6 +19,10 @@ import { EditTransactionModal } from './components/modals/EditTransactionModal';
 import { DeleteTransactionModal } from './components/modals/DeleteTransactionModal';
 import { AddGoalModal } from './components/modals/AddGoalModal';
 import { SystemStatusModal } from './components/modals/SystemStatusModal';
+import { AddBudgetModal } from './components/budgets/AddBudgetModal';
+import { EditBudgetModal } from './components/budgets/EditBudgetModal';
+import { DeleteBudgetModal } from './components/budgets/DeleteBudgetModal';
+import { BudgetAnalyticsModal } from './components/budgets/BudgetAnalyticsModal';
 import {
   NavigationTab,
   DateFilterOption,
@@ -29,12 +33,21 @@ import {
   TransactionSummary,
 } from './types/finance';
 import {
+  Budget,
+  CreateBudgetInput,
+  UpdateBudgetInput,
+  BudgetOverview,
+} from './types/budget';
+import {
   DEMO_TRANSACTIONS,
   DEMO_SAVINGS_GOALS,
   DEMO_SUMMARIES_BY_DATE_FILTER,
   DEMO_FINANCIAL_SUMMARY,
+  DEMO_BUDGETS,
+  enrichDemoBudgetsWithTransactions,
 } from './data/mockFinanceData';
 import { transactionService } from './services/transactions';
+import { budgetService } from './services/budgets';
 
 const MainDashboardLayout: React.FC = () => {
   const { user, isGuestMode } = useAuth();
@@ -53,6 +66,13 @@ const MainDashboardLayout: React.FC = () => {
   const [isSystemStatusOpen, setIsSystemStatusOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
 
+  // Budget Modals state
+  const [isAddBudgetOpen, setIsAddBudgetOpen] = useState(false);
+  const [isEditBudgetOpen, setIsEditBudgetOpen] = useState(false);
+  const [isDeleteBudgetOpen, setIsDeleteBudgetOpen] = useState(false);
+  const [isBudgetAnalyticsOpen, setIsBudgetAnalyticsOpen] = useState(false);
+  const [selectedBudget, setSelectedBudget] = useState<Budget | null>(null);
+
   // Live transactions & summary state
   const [transactions, setTransactions] = useState<Transaction[]>(DEMO_TRANSACTIONS);
   const [liveSummary, setLiveSummary] = useState<TransactionSummary | null>(null);
@@ -61,6 +81,11 @@ const MainDashboardLayout: React.FC = () => {
 
   // Live savings goals state
   const [savingsGoals, setSavingsGoals] = useState<SavingsGoal[]>(DEMO_SAVINGS_GOALS);
+
+  // Budgets state
+  const [rawBudgets, setRawBudgets] = useState<Budget[]>(DEMO_BUDGETS);
+  const [budgetOverview, setBudgetOverview] = useState<BudgetOverview | null>(null);
+  const [isLoadingBudgets, setIsLoadingBudgets] = useState(false);
 
   // Fetch live transactions and summary when user is authenticated (not guest mode)
   const fetchLedger = useCallback(async () => {
@@ -89,9 +114,42 @@ const MainDashboardLayout: React.FC = () => {
     }
   }, [isGuestMode, dateFilter]);
 
+  // Fetch budgets and overview
+  const fetchBudgets = useCallback(async () => {
+    if (isGuestMode || dbUnconfiguredWarning) {
+      return;
+    }
+
+    setIsLoadingBudgets(true);
+    try {
+      const [budgetsRes, overviewRes] = await Promise.all([
+        budgetService.getBudgets(),
+        budgetService.getBudgetOverview(),
+      ]);
+      setRawBudgets(budgetsRes.budgets);
+      setBudgetOverview(overviewRes);
+    } catch {
+      // Degrade gracefully
+    } finally {
+      setIsLoadingBudgets(false);
+    }
+  }, [isGuestMode, dbUnconfiguredWarning]);
+
   useEffect(() => {
     fetchLedger();
   }, [fetchLedger]);
+
+  useEffect(() => {
+    fetchBudgets();
+  }, [fetchBudgets]);
+
+  // Compute enriched budgets dynamically (for guest mode or local live sync)
+  const budgets = useMemo(() => {
+    if (isGuestMode || dbUnconfiguredWarning) {
+      return enrichDemoBudgetsWithTransactions(rawBudgets, transactions);
+    }
+    return rawBudgets;
+  }, [rawBudgets, transactions, isGuestMode, dbUnconfiguredWarning]);
 
   // Dynamically compute financial summary based on period, live summary or demo data
   const dynamicSummary = useMemo(() => {
@@ -155,7 +213,7 @@ const MainDashboardLayout: React.FC = () => {
         type: input.type,
         category: input.category,
         merchant: input.merchant || input.title,
-        date: 'Today',
+        date: new Date().toISOString(),
         status: 'completed',
         account: input.account || 'Primary Checking',
         notes: input.notes,
@@ -168,11 +226,10 @@ const MainDashboardLayout: React.FC = () => {
     try {
       const created = await transactionService.createTransaction(input);
       setTransactions((prev) => [created, ...prev]);
-      // Refresh summary
       transactionService.getTransactionSummary(dateFilter).then((s) => setLiveSummary(s)).catch(() => {});
+      fetchBudgets();
       return true;
     } catch (err: unknown) {
-      // If DB error, throw for modal to display
       throw err;
     }
   };
@@ -190,6 +247,7 @@ const MainDashboardLayout: React.FC = () => {
       const updated = await transactionService.updateTransaction(id, updates);
       setTransactions((prev) => prev.map((t) => (t.id === id ? updated : t)));
       transactionService.getTransactionSummary(dateFilter).then((s) => setLiveSummary(s)).catch(() => {});
+      fetchBudgets();
       return true;
     } catch {
       return false;
@@ -207,6 +265,81 @@ const MainDashboardLayout: React.FC = () => {
       await transactionService.deleteTransaction(id);
       setTransactions((prev) => prev.filter((t) => t.id !== id));
       transactionService.getTransactionSummary(dateFilter).then((s) => setLiveSummary(s)).catch(() => {});
+      fetchBudgets();
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
+  // Handle adding a budget
+  const handleAddBudget = async (input: CreateBudgetInput): Promise<boolean> => {
+    if (isGuestMode || dbUnconfiguredWarning) {
+      const newBudget: Budget = {
+        id: `bgt-user-${Date.now()}`,
+        name: input.name,
+        category: input.category,
+        period: input.period,
+        limit: input.limit,
+        limitInCents: Math.round(input.limit * 100),
+        currency: input.currency || 'USD',
+        startDate: input.startDate,
+        endDate: input.endDate,
+        alertThresholds: input.alertThresholds || [50, 75, 90, 100],
+        isActive: true,
+        actualSpent: 0,
+        actualSpentInCents: 0,
+        remaining: input.limit,
+        remainingInCents: Math.round(input.limit * 100),
+        utilizationPercentage: 0,
+        status: 'normal',
+        description: input.description,
+        isDemoRecord: true,
+      };
+      setRawBudgets((prev) => [newBudget, ...prev]);
+      return true;
+    }
+
+    try {
+      const created = await budgetService.createBudget(input);
+      setRawBudgets((prev) => [created, ...prev]);
+      budgetService.getBudgetOverview().then((o) => setBudgetOverview(o)).catch(() => {});
+      return true;
+    } catch (err: unknown) {
+      throw err;
+    }
+  };
+
+  // Handle updating a budget
+  const handleUpdateBudget = async (id: string, updates: UpdateBudgetInput): Promise<boolean> => {
+    if (isGuestMode || dbUnconfiguredWarning) {
+      setRawBudgets((prev) =>
+        prev.map((b) => (b.id === id ? { ...b, ...updates } : b))
+      );
+      return true;
+    }
+
+    try {
+      const updated = await budgetService.updateBudget(id, updates);
+      setRawBudgets((prev) => prev.map((b) => (b.id === id ? updated : b)));
+      budgetService.getBudgetOverview().then((o) => setBudgetOverview(o)).catch(() => {});
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
+  // Handle deleting a budget
+  const handleDeleteBudget = async (id: string): Promise<boolean> => {
+    if (isGuestMode || dbUnconfiguredWarning) {
+      setRawBudgets((prev) => prev.filter((b) => b.id !== id));
+      return true;
+    }
+
+    try {
+      await budgetService.deleteBudget(id);
+      setRawBudgets((prev) => prev.filter((b) => b.id !== id));
+      budgetService.getBudgetOverview().then((o) => setBudgetOverview(o)).catch(() => {});
       return true;
     } catch {
       return false;
@@ -226,8 +359,11 @@ const MainDashboardLayout: React.FC = () => {
             summary={dynamicSummary}
             dateFilter={dateFilter}
             goals={savingsGoals}
+            budgets={budgets}
+            budgetOverview={budgetOverview}
             onViewAllTransactions={() => setCurrentTab('transactions')}
             onOpenNewGoal={() => setIsAddGoalOpen(true)}
+            onNavigateToBudgets={() => setCurrentTab('budgeting')}
             isLive={!isGuestMode && !dbUnconfiguredWarning}
             cashFlow={liveSummary?.monthlyCashFlow}
             categoryBreakdown={liveSummary?.categoryBreakdown}
@@ -251,7 +387,27 @@ const MainDashboardLayout: React.FC = () => {
           />
         );
       case 'budgeting':
-        return <BudgetingView />;
+        return (
+          <BudgetingView
+            budgets={budgets}
+            overview={budgetOverview}
+            isLoading={isLoadingBudgets}
+            onOpenAddBudget={() => setIsAddBudgetOpen(true)}
+            onEditBudget={(b) => {
+              setSelectedBudget(b);
+              setIsEditBudgetOpen(true);
+            }}
+            onDeleteBudget={(b) => {
+              setSelectedBudget(b);
+              setIsDeleteBudgetOpen(true);
+            }}
+            onViewAnalytics={(b) => {
+              setSelectedBudget(b);
+              setIsBudgetAnalyticsOpen(true);
+            }}
+            onRefresh={fetchBudgets}
+          />
+        );
       case 'savings':
         return (
           <SavingsGoalsView
@@ -279,8 +435,11 @@ const MainDashboardLayout: React.FC = () => {
             summary={dynamicSummary}
             dateFilter={dateFilter}
             goals={savingsGoals}
+            budgets={budgets}
+            budgetOverview={budgetOverview}
             onViewAllTransactions={() => setCurrentTab('transactions')}
             onOpenNewGoal={() => setIsAddGoalOpen(true)}
+            onNavigateToBudgets={() => setCurrentTab('budgeting')}
             isLive={!isGuestMode && !dbUnconfiguredWarning}
             cashFlow={liveSummary?.monthlyCashFlow}
             categoryBreakdown={liveSummary?.categoryBreakdown}
@@ -371,6 +530,42 @@ const MainDashboardLayout: React.FC = () => {
         isOpen={isAddGoalOpen}
         onClose={() => setIsAddGoalOpen(false)}
         onAddGoal={handleAddGoal}
+      />
+
+      <AddBudgetModal
+        isOpen={isAddBudgetOpen}
+        onClose={() => setIsAddBudgetOpen(false)}
+        onAddBudget={handleAddBudget}
+      />
+
+      <EditBudgetModal
+        isOpen={isEditBudgetOpen}
+        budget={selectedBudget}
+        onClose={() => {
+          setIsEditBudgetOpen(false);
+          setSelectedBudget(null);
+        }}
+        onUpdateBudget={handleUpdateBudget}
+      />
+
+      <DeleteBudgetModal
+        isOpen={isDeleteBudgetOpen}
+        budget={selectedBudget}
+        onClose={() => {
+          setIsDeleteBudgetOpen(false);
+          setSelectedBudget(null);
+        }}
+        onConfirmDelete={handleDeleteBudget}
+      />
+
+      <BudgetAnalyticsModal
+        isOpen={isBudgetAnalyticsOpen}
+        budget={selectedBudget}
+        transactions={transactions}
+        onClose={() => {
+          setIsBudgetAnalyticsOpen(false);
+          setSelectedBudget(null);
+        }}
       />
 
       <SystemStatusModal

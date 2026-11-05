@@ -123,3 +123,97 @@ export interface TransactionSummaryData {
   categoryBreakdown: CategoryExpenseBreakdown[];
   monthlyCashFlow: MonthlyFlowPoint[];
 }
+
+export type BudgetPeriod = 'monthly' | 'yearly';
+export type BudgetStatus = 'normal' | 'moderate' | 'warning' | 'critical' | 'exceeded';
+
+export interface BudgetAlertItem {
+  budgetId: string;
+  budgetName: string;
+  category: string;
+  threshold: number;
+  level: BudgetStatus;
+  message: string;
+  utilizationPercentage: number;
+  limit: number;
+  actualSpent: number;
+  remaining: number;
+  timestamp: string;
+}
+
+export interface BudgetResponse {
+  id: string;
+  userId: string;
+  name: string;
+  description?: string;
+  period: BudgetPeriod;
+  category: string;
+  limitInCents: number;
+  limit: number;
+  currency: string;
+  startDate: string;
+  endDate: string;
+  alertThresholds: number[];
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface BudgetEnrichedResponse extends BudgetResponse {
+  actualSpentInCents: number;
+  actualSpent: number;
+  remainingInCents: number;
+  remaining: number;
+  utilizationPercentage: number;
+  status: BudgetStatus;
+  transactionCount: number;
+  alerts: BudgetAlertItem[];
+}
+
+export interface BudgetOverviewData {
+  period: string;
+  totalLimitInCents: number;
+  totalLimit: number;
+  totalSpentInCents: number;
+  totalSpent: number;
+  totalRemainingInCents: number;
+  totalRemaining: number;
+  overallUtilizationPercentage: number;
+  activeBudgetCount: number;
+  exceededBudgetCount: number;
+  approachingLimitCount: number;
+  normalBudgetCount: number;
+  categorySpending: {
+    category: string;
+    limitInCents: number;
+    limit: number;
+    spentInCents: number;
+    spent: number;
+    remainingInCents: number;
+    remaining: number;
+    utilizationPercentage: number;
+    status: BudgetStatus;
+  }[];
+  recentAlerts: BudgetAlertItem[];
+}
+
+export interface BudgetAnalyticsData {
+  budget: BudgetEnrichedResponse;
+  dailySpendTrend: {
+    date: string;
+    spentInCents: number;
+    spent: number;
+    cumulativeSpentInCents: number;
+    cumulativeSpent: number;
+  }[];
+  velocity: {
+    averageDailySpend: number;
+    projectedTotalSpend: number;
+    projectedUtilizationPercentage: number;
+    isProjectedToExceed: boolean;
+    daysRemaining: number;
+    daysElapsed: number;
+    totalDays: number;
+  };
+  recentTransactions: TransactionResponse[];
+}
