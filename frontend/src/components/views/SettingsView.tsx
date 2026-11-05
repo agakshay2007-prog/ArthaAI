@@ -1,12 +1,17 @@
 import React, { useState } from 'react';
-import { SlidersHorizontal, User, DollarSign, Bell, Activity } from 'lucide-react';
-import { DEMO_FINANCIAL_SUMMARY } from '../../data/mockFinanceData';
+import { SlidersHorizontal, User, DollarSign, Bell, Activity, ShieldCheck, Key } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 
 interface SettingsViewProps {
   onOpenSystemStatus: () => void;
+  onOpenProfile: () => void;
 }
 
-export const SettingsView: React.FC<SettingsViewProps> = ({ onOpenSystemStatus }) => {
+export const SettingsView: React.FC<SettingsViewProps> = ({
+  onOpenSystemStatus,
+  onOpenProfile,
+}) => {
+  const { user, isGuestMode } = useAuth();
   const [currency, setCurrency] = useState('USD');
   const [emailAlerts, setEmailAlerts] = useState(true);
   const [biweeklyReport, setBiweeklyReport] = useState(true);
@@ -25,17 +30,27 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onOpenSystemStatus }
 
       {/* User Profile Card */}
       <div className="glass-card rounded-2xl p-6">
-        <h3 className="text-sm font-bold text-white mb-4 flex items-center gap-2">
-          <User className="w-4 h-4 text-brand-400" />
-          <span>User Identity</span>
-        </h3>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-sm font-bold text-white flex items-center gap-2">
+            <User className="w-4 h-4 text-brand-400" />
+            <span>User Identity & Security</span>
+          </h3>
+          <button
+            onClick={onOpenProfile}
+            className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-brand-300 bg-brand-500/10 border border-brand-500/20 hover:bg-brand-500/20 transition cursor-pointer"
+          >
+            <Key className="w-3.5 h-3.5" />
+            <span>Edit Profile & Password</span>
+          </button>
+        </div>
+
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
           <div>
             <label className="text-slate-400 block mb-1">Full Name</label>
             <input
               type="text"
               readOnly
-              value={DEMO_FINANCIAL_SUMMARY.userProfile.name}
+              value={user?.fullName || 'Alex Morgan'}
               className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white font-medium focus:outline-none"
             />
           </div>
@@ -44,7 +59,24 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onOpenSystemStatus }
             <input
               type="email"
               readOnly
-              value={DEMO_FINANCIAL_SUMMARY.userProfile.email}
+              value={user?.email || 'alex.morgan@artha.ai'}
+              className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white font-medium focus:outline-none"
+            />
+          </div>
+          <div>
+            <label className="text-slate-400 block mb-1">Account Status</label>
+            <div className="flex items-center space-x-2 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white">
+              <ShieldCheck className="w-4 h-4 text-emerald-400" />
+              <span className="capitalize font-medium">{user?.accountStatus || 'Active'}</span>
+              {isGuestMode && <span className="text-[10px] text-amber-400">(Guest Session)</span>}
+            </div>
+          </div>
+          <div>
+            <label className="text-slate-400 block mb-1">Phone Number</label>
+            <input
+              type="text"
+              readOnly
+              value={user?.phoneNumber || '+1 (555) 234-5678'}
               className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white font-medium focus:outline-none"
             />
           </div>

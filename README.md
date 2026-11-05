@@ -1,54 +1,97 @@
-# ArthaAI — Full-Stack Intelligent Platform Core
+# ArthaAI — Intelligent Personal Finance & Wealth Management System
 
-ArthaAI is an enterprise-grade full-stack financial and autonomous intelligence platform. This repository contains the Phase 1 decoupled architecture featuring a modern React frontend and a resilient Node.js / Express backend with MongoDB Atlas integration.
+ArthaAI is an enterprise-grade full-stack personal finance and autonomous intelligence platform. This repository represents the integrated implementation of **Phase 1 (Full-Stack Architecture)**, **Phase 2 (Premium Fintech Dashboard)**, and **Phase 3 (Enterprise Authentication & User Management)**.
 
 ---
 
 ## 🏛️ Architecture Overview
 
-The project is structured into cleanly decoupled client and server workspaces:
+The project is cleanly decoupled into client and server workspaces with strict separation of concerns, enterprise security, and strong TypeScript typings:
 
 ```
 ArthaAI/
 ├── backend/                        # Node.js + Express + TypeScript API Server
 │   ├── src/
-│   │   ├── config/                 # Environment variables & MongoDB Atlas configuration
-│   │   │   ├── database.ts         # Mongoose connection foundation & lifecycle
-│   │   │   └── env.ts              # Strongly-typed environment variables
+│   │   ├── config/                 # Environment variables & MongoDB Atlas lifecycle
+│   │   │   ├── database.ts         # Mongoose connection manager & health hooks
+│   │   │   └── env.ts              # Strongly-typed environment schema & validation
 │   │   ├── controllers/            # Route controllers
-│   │   │   └── health.controller.ts# Health check controller
+│   │   │   ├── auth.controller.ts  # Registration, login, logout, profile & password
+│   │   │   └── health.controller.ts# Liveness, readiness, and diagnostics probes
 │   │   ├── middleware/             # Express middlewares
-│   │   │   ├── errorHandler.ts     # Centralized error handler
-│   │   │   └── notFoundHandler.ts  # 404 handler
+│   │   │   ├── auth.middleware.ts  # HttpOnly cookie & Bearer JWT authentication guard
+│   │   │   ├── errorHandler.ts     # Centralized error sanitizer & response pipeline
+│   │   │   ├── notFoundHandler.ts  # Standardized 404 handler
+│   │   │   └── rateLimit.middleware.ts # IP rate limiter for sensitive auth routes
+│   │   ├── models/                 # Mongoose schemas & data models
+│   │   │   └── user.model.ts       # User model with bcrypt hashing & JSON sanitization
 │   │   ├── routes/                 # Express API routes
-│   │   │   ├── health.route.ts     # /api/health endpoint
+│   │   │   ├── auth.route.ts       # /api/auth authentication endpoints
+│   │   │   ├── health.route.ts     # /api/health probes & telemetry
 │   │   │   └── index.ts            # Central API route gateway
-│   │   ├── types/                  # Backend TypeScript interfaces
-│   │   ├── utils/                  # Utility helpers & response formatters
-│   │   │   ├── apiError.ts         # Custom AppError class
+│   │   ├── types/                  # Backend TypeScript interfaces & declarations
+│   │   │   └── index.ts
+│   │   ├── utils/                  # Cryptography, tokens & response formatters
+│   │   │   ├── apiError.ts         # Custom AppError operational hierarchy
 │   │   │   ├── apiResponse.ts      # Standardized API response builder
-│   │   │   └── asyncHandler.ts     # Async route handler wrapper
-│   │   ├── app.ts                  # Express application setup & middleware stack
-│   │   └── server.ts               # HTTP server bootstrap & graceful shutdown
-│   ├── .env.example                # Example backend environment variables
-│   ├── package.json                # Backend dependencies & build scripts
+│   │   │   ├── asyncHandler.ts     # Async Promise-exception wrapper
+│   │   │   └── token.ts            # JWT signing, verification & cookie management
+│   │   ├── app.ts                  # Express application setup, security stack & cookies
+│   │   └── server.ts               # HTTP server bootstrap & graceful shutdown hooks
+│   ├── tests/                      # Automated test suites
+│   │   └── auth.test.ts            # 16 automated tests covering auth, JWT, bcrypt & DB degradation
+│   ├── .env.example                # Sanitized backend environment template
+│   ├── package.json                # Backend dependencies, build & test scripts
 │   └── tsconfig.json               # Backend TypeScript configuration
 │
 ├── frontend/                       # React 18 + Vite + TypeScript Client
 │   ├── public/                     # Static assets
 │   ├── src/
-│   │   ├── components/             # Reusable UI components
-│   │   │   ├── ArchitectureOverview.tsx # Phase 1 tech stack overview
-│   │   │   ├── HealthMonitor.tsx   # Live health check dashboard & latency probe
-│   │   │   └── Navbar.tsx          # Main header navigation
-│   │   ├── services/               # API clients & service integrations
-│   │   │   └── api.ts              # API client for health checks
+│   │   ├── components/             # Reusable UI & view components
+│   │   │   ├── auth/               # Authentication Views & Modals
+│   │   │   │   ├── ForgotPasswordModal.tsx # Simulated password recovery dialog
+│   │   │   │   ├── LoginView.tsx   # Premium dark navy glassmorphic login interface
+│   │   │   │   ├── RegisterView.tsx# Account registration with password strength meter
+│   │   │   │   └── UserProfileModal.tsx # Profile editor & password change modal
+│   │   │   ├── dashboard/          # Financial dashboard cards & visual analytics
+│   │   │   │   ├── AIAssistantCard.tsx # Natural language finance assistant preview
+│   │   │   │   ├── FinancialCharts.tsx # Interactive Income vs Expense & category charts
+│   │   │   │   ├── FinancialHealthCard.tsx # Health score & savings rate metrics
+│   │   │   │   ├── MetricCards.tsx # Total balance, income, expenses & savings cards
+│   │   │   │   ├── RecentTransactionsCard.tsx # Filterable transaction ledger
+│   │   │   │   └── SavingsGoalsCard.tsx # Interactive target progress bars
+│   │   │   ├── layout/             # Master app shell
+│   │   │   │   ├── Header.tsx      # Top bar with user profile, date filter & actions
+│   │   │   │   └── Sidebar.tsx     # Responsive collapsable navigation bar
+│   │   │   ├── modals/             # Transaction, goal & system status dialogs
+│   │   │   │   ├── AddGoalModal.tsx
+│   │   │   │   ├── AddTransactionModal.tsx
+│   │   │   │   └── SystemStatusModal.tsx # Live full-stack architecture probe
+│   │   │   └── views/              # Full page views
+│   │   │       ├── AIAssistantView.tsx
+│   │   │       ├── BillsPaymentsView.tsx
+│   │   │       ├── BudgetingView.tsx
+│   │   │       ├── DashboardView.tsx
+│   │   │       ├── ReportsAnalyticsView.tsx
+│   │   │       ├── SavingsGoalsView.tsx
+│   │   │       ├── SettingsView.tsx
+│   │   │       └── TransactionsView.tsx
+│   │   ├── context/                # React state context
+│   │   │   └── AuthContext.tsx     # Global authentication provider with guest mode
+│   │   ├── data/                   # Identified frontend demo data
+│   │   │   └── mockFinanceData.ts
+│   │   ├── services/               # API clients
+│   │   │   ├── api.ts              # Health & telemetry service
+│   │   │   └── auth.ts             # Auth REST API service with HttpOnly credentials
 │   │   ├── types/                  # Frontend TypeScript definitions
-│   │   ├── App.tsx                 # Root application component
-│   │   ├── index.css               # Tailwind CSS base & utilities
-│   │   └── main.tsx                # Frontend application entry point
+│   │   │   ├── auth.ts             # Auth user, payloads & responses
+│   │   │   ├── finance.ts          # Financial models & filter definitions
+│   │   │   └── index.ts            # System health interfaces
+│   │   ├── App.tsx                 # Root application with auth gating & dashboard shell
+│   │   ├── index.css               # Tailwind CSS theme & glassmorphic utilities
+│   │   └── main.tsx                # Frontend bootstrap
 │   ├── .env.example                # Example frontend environment variables
-│   ├── index.html                  # HTML5 template
+│   ├── index.html                  # HTML5 entry template
 │   ├── package.json                # Frontend dependencies & build scripts
 │   ├── postcss.config.js           # PostCSS configuration
 │   ├── tailwind.config.js          # Tailwind CSS design system config
@@ -56,183 +99,122 @@ ArthaAI/
 │   └── vite.config.ts              # Vite bundler configuration & proxy
 │
 ├── .gitignore                      # Security-focused ignore rules
-├── package.json                    # Root workspace script coordinator
-└── README.md                       # Platform documentation
+├── package.json                    # Workspace script coordinator
+└── README.md                       # Comprehensive platform documentation
 ```
 
 ---
 
-## 🛠️ Technology Stack
+## 🔐 Phase 3: Authentication & Security Architecture
 
-### Frontend
-- **Framework**: [React 18](https://react.dev/) + [TypeScript](https://www.typescriptlang.org/)
-- **Bundler & Tooling**: [Vite](https://vitejs.dev/)
-- **Styling**: [Tailwind CSS](https://tailwindcss.com/) + PostCSS + Autoprefixer
-- **Icons**: [Lucide React](https://lucide.dev/)
+### 1. Database Model (`User`)
+- **Full Name**: Trimmed string with min/max length validation.
+- **Email Address**: Normalized to lowercase, strictly validated for RFC-compliant email formats, enforced with unique MongoDB indexing.
+- **Password Hash**: Irreversibly hashed using `bcrypt` (10 salt rounds). Excluded from default queries (`select: false`) and automatically omitted from all serialized JSON responses.
+- **Phone Number**: Optional sanitized string.
+- **Account Status**: Enum (`active`, `suspended`, `pending`).
+- **Email Verification**: Boolean flag (`isEmailVerified`).
+- **Timestamps**: Automatic `createdAt` and `updatedAt`.
 
-### Backend
-- **Runtime**: [Node.js](https://nodejs.org/) (ES Modules)
-- **Framework**: [Express 4](https://expressjs.com/) + [TypeScript](https://www.typescriptlang.org/)
-- **Database ODM**: [Mongoose 8](https://mongoosejs.com/) for MongoDB Atlas
-- **Security**: [Helmet](https://helmetjs.github.io/) + [CORS](https://github.com/expressjs/cors)
-- **Logging**: [Morgan](https://github.com/expressjs/morgan)
-- **Development Tooling**: `tsx` (TypeScript execute & watch)
+### 2. Token & Session Management
+- **Short-Lived JWT Access Tokens**: Signed using HMAC-SHA256 with user `id`, `email`, and `accountStatus`. Configured to expire in 7 days by default (customizable via `JWT_EXPIRES_IN`).
+- **Secure HttpOnly Cookies**: Sent with `httpOnly: true`, `sameSite: 'lax'`, and dynamic `secure: true` in production environments. Tokens cannot be read by browser JavaScript, protecting against XSS credential theft.
+- **Dual Bearer Support**: The authentication middleware accepts both incoming HttpOnly cookies and `Authorization: Bearer <token>` headers, enabling both web application and future mobile/REST clients.
 
----
+### 3. Rate Limiting
+- Built using `express-rate-limit`.
+- Applied directly to sensitive authentication endpoints (`/api/auth/*`).
+- Restricts requests to 15 attempts per 15-minute window per IP to eliminate brute-force and credential-stuffing vulnerabilities.
 
-## ⚙️ Getting Started
-
-### Prerequisites
-- Node.js (v18.0.0 or later recommended)
-- npm (v9.0.0 or later)
-- MongoDB Atlas cluster URI (optional for initial local run, required for database persistence)
-
-### 1. Installation
-
-From the project root:
-
-```bash
-# Install backend dependencies
-cd backend && npm install
-
-# Install frontend dependencies
-cd ../frontend && npm install
-```
-
-Or via root helper scripts:
-```bash
-npm run install:all
-```
+### 4. Database-Unconfigured Graceful Degradation
+- If MongoDB Atlas credentials are not yet specified in `backend/.env`, the system does **not** crash or fabricate fake data.
+- Calls to database-dependent endpoints (`/api/auth/register`, `/api/auth/login`, `/api/auth/profile`, `/api/auth/change-password`) cleanly return `503 Service Unavailable` with a descriptive message prompting the operator to configure `MONGODB_URI`.
+- The frontend provides an instant **Guest Demo Mode (Alex Morgan)** so evaluators can test the entire application and interactive dashboard without requiring an active database cluster.
 
 ---
 
-## 🔐 Environment Configuration
+## 📡 Authentication REST API Endpoints
+
+| Method | Endpoint | Access | Description |
+| :--- | :--- | :--- | :--- |
+| `POST` | `/api/auth/register` | Public (Rate-limited) | Creates a new user, hashes password, sets auth cookie & returns sanitized user |
+| `POST` | `/api/auth/login` | Public (Rate-limited) | Authenticates email & password, sets auth cookie & returns token + user |
+| `POST` | `/api/auth/logout` | Authenticated / Public | Clears the HttpOnly session cookie |
+| `GET` | `/api/auth/me` | Authenticated | Validates session via cookie or Bearer token and returns authenticated user |
+| `PATCH` | `/api/auth/profile` | Authenticated | Updates current user full name and phone number |
+| `PATCH` | `/api/auth/change-password` | Authenticated | Verifies old password and updates to new password hash |
+
+---
+
+## ⚙️ Environment Configuration
 
 ### Backend (`backend/.env`)
-Copy the example file:
-```bash
-cp backend/.env.example backend/.env
-```
-
-Configure your variables:
+Copy `backend/.env.example` to `backend/.env`:
 ```env
 PORT=5000
 NODE_ENV=development
-MONGODB_URI=mongodb+srv://<username>:<password>@<cluster-url>/artha_ai?retryWrites=true&w=majority
 CLIENT_ORIGIN=http://localhost:5173
 API_PREFIX=/api
-```
 
-> **Note**: If `MONGODB_URI` is omitted or empty, the backend runs in a graceful "unconfigured" mode. The server and health checks remain fully operational while reporting the database state.
+# MongoDB Atlas
+# If omitted or unconfigured, server runs gracefully in unconfigured mode
+MONGODB_URI=mongodb+srv://<username>:<password>@<cluster-url>/artha_ai?retryWrites=true&w=majority
+
+# JWT & Authentication Security
+JWT_SECRET=artha_ai_super_secret_jwt_key_at_least_32_characters_long
+JWT_EXPIRES_IN=7d
+COOKIE_NAME=artha_auth_token
+COOKIE_MAX_AGE_MS=604800000
+BCRYPT_SALT_ROUNDS=10
+```
 
 ### Frontend (`frontend/.env`)
-Copy the example file:
-```bash
-cp frontend/.env.example frontend/.env
-```
-
-Configure your variables:
 ```env
 VITE_API_BASE_URL=http://localhost:5000
 ```
 
 ---
 
-## 🚀 Running the Application
+## 🚀 Getting Started & Execution
 
-### Development Mode
-
-Run backend and frontend in separate terminals:
-
+### 1. Installation
+Install root, backend, and frontend packages:
 ```bash
-# Terminal 1: Backend API (runs on http://localhost:5000)
-cd backend
-npm run dev
-
-# Terminal 2: Frontend Client (runs on http://localhost:5173)
-cd frontend
-npm run dev
+npm run install:all
 ```
 
-Or execute from the project root:
+### 2. Run Automated Test Suite
+Run the 16 automated backend authentication and health unit/integration tests:
 ```bash
+npm run test:backend
+# or
+npm test
+```
+
+### 3. Production Build
+Build both backend (TypeScript compilation to `dist/`) and frontend (Vite bundler to `dist/`):
+```bash
+npm run build
+```
+
+### 4. Development Servers
+Start backend and frontend development servers concurrently:
+```bash
+# Terminal 1: Backend API (http://localhost:5000)
 npm run dev:backend
+
+# Terminal 2: Frontend Client (http://localhost:5173)
 npm run dev:frontend
 ```
 
 ---
 
-## 🔍 Health-Check API & Probes
-
-The backend provides distinct enterprise-grade telemetry and container probe endpoints:
-
-### 1. Liveness Probe (`GET /api/health/live` or `/health/live`)
-Confirms the Node.js / Express process is alive and responsive to incoming requests.
-- **Success (`200 OK`)**:
-```json
-{
-  "success": true,
-  "message": "Service is alive",
-  "data": {
-    "service": "ArthaAI Backend API",
-    "status": "alive",
-    "uptime": 45,
-    "timestamp": "2026-11-05T08:55:00.000Z"
-  },
-  "timestamp": "2026-11-05T08:55:00.000Z"
-}
-```
-
-### 2. Readiness Probe (`GET /api/health/ready` or `/health/ready`)
-Verifies critical infrastructure dependencies (MongoDB Atlas).
-- **Ready (`200 OK`)**: Database is connected (`readyState: 1`).
-- **Not Ready (`503 Service Unavailable`)**: Database is unconfigured or disconnected.
-
-### 3. Comprehensive Diagnostics (`GET /api/health` or `/health`)
-Reports complete system metrics, memory consumption, Node version, platform, and MongoDB lifecycle status.
-- **Operational Statuses**:
-  - `healthy`: Database connected and operational.
-  - `degraded`: Server operational, but database is unconfigured.
-  - `unhealthy`: Database connection failed or disconnected.
-  - `starting`: Database connection in progress.
-
----
-
-## 🛡️ Centralized Error Handling
-
-The backend implements an enterprise-grade error pipeline:
-- **`AppError`**: Custom error class with HTTP status codes and operational classification.
-- **`asyncHandler`**: Wraps asynchronous controllers to catch unhandled Promise rejections.
-- **`errorHandler`**: Centralized middleware handling:
-  - Custom `AppError` instances
-  - Mongoose `ValidationError` and `CastError`
-  - MongoDB duplicate key (`11000`)
-  - Malformed JSON payloads
-- **Environment Isolation**: Stack traces and internal error traces are sanitized and suppressed in `production`.
-
----
-
-## 🏗️ Build & Verification
-
-To verify production builds:
-
-```bash
-# Build backend TypeScript
-cd backend && npm run build
-
-# Build frontend Vite bundle
-cd ../frontend && npm run build
-```
-
-Or from repository root:
-```bash
-npm run build
-```
-
----
-
-## 🔒 Security Best Practices
-- `.gitignore` strictly excludes `.env`, `.env*.local`, certificates, credentials, and build outputs.
-- Helmet is configured to add HTTP security headers.
-- CORS whitelist restricts browser origin access to configured frontend clients.
-- Rate limiting and authentication hooks are prepared for subsequent phases.
+## 🛡️ Security Audit Checklist
+- [x] Passwords irreversibly hashed with bcrypt (salt rounds: 10).
+- [x] JWT tokens stored in secure HttpOnly cookies (`SameSite=lax`, `Secure` in production).
+- [x] Password hashes strictly excluded from all API responses and MongoDB default projections.
+- [x] Sensitive endpoints rate-limited against brute force attacks.
+- [x] CORS origin whitelist strictly enforced.
+- [x] Strict input validation for emails, full names, and passwords.
+- [x] Automated test suite verifying edge cases and database degradation behavior.
+- [x] Zero exposed credentials, `.env` files, or secrets in Git tracking.

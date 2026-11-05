@@ -7,8 +7,10 @@ import {
   Calendar,
   CheckCircle2,
   AlertCircle,
+  Sparkles,
 } from 'lucide-react';
 import { DateFilterOption } from '../../types/finance';
+import { useAuth } from '../../context/AuthContext';
 
 interface HeaderProps {
   onOpenMobileSidebar: () => void;
@@ -17,6 +19,7 @@ interface HeaderProps {
   onChangeDateFilter: (filter: DateFilterOption) => void;
   searchQuery: string;
   onSearchChange: (query: string) => void;
+  onOpenProfile: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -26,8 +29,20 @@ export const Header: React.FC<HeaderProps> = ({
   onChangeDateFilter,
   searchQuery,
   onSearchChange,
+  onOpenProfile,
 }) => {
+  const { user, isGuestMode } = useAuth();
   const [showNotifications, setShowNotifications] = useState(false);
+
+  const firstName = user?.fullName ? user.fullName.split(' ')[0] : 'Member';
+  const initials = user?.fullName
+    ? user.fullName
+        .split(' ')
+        .map((n) => n[0])
+        .join('')
+        .toUpperCase()
+        .slice(0, 2)
+    : 'U';
 
   const notifications = [
     {
@@ -67,10 +82,16 @@ export const Header: React.FC<HeaderProps> = ({
 
         <div>
           <h1 className="text-base sm:text-xl font-bold text-white tracking-tight flex items-center gap-2">
-            <span>Welcome back, Alex</span>
-            <span className="hidden md:inline-block text-xs px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-medium">
-              Health 86/100
-            </span>
+            <span>Welcome back, {firstName}</span>
+            {isGuestMode ? (
+              <span className="hidden sm:inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-300 border border-amber-500/20 font-medium">
+                <Sparkles className="w-3 h-3" /> Guest Demo
+              </span>
+            ) : (
+              <span className="hidden sm:inline-block text-xs px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-medium">
+                Health 86/100
+              </span>
+            )}
           </h1>
           <p className="text-xs text-slate-400 hidden sm:block">
             Intelligent Portfolio Overview • Net worth up +4.8% this month
@@ -165,12 +186,16 @@ export const Header: React.FC<HeaderProps> = ({
           )}
         </div>
 
-        {/* User Avatar */}
-        <div className="flex items-center space-x-2 pl-1">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-brand-600 to-indigo-600 flex items-center justify-center text-xs font-bold text-white shadow-glow-violet cursor-pointer border border-brand-400/30">
-            AM
+        {/* User Profile Trigger Avatar */}
+        <button
+          onClick={onOpenProfile}
+          className="flex items-center space-x-2 pl-1 group cursor-pointer focus:outline-none"
+          title="Account Profile & Security Settings"
+        >
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-brand-600 to-indigo-600 flex items-center justify-center text-xs font-bold text-white shadow-glow-violet group-hover:ring-2 group-hover:ring-brand-400 transition border border-brand-400/30">
+            {initials}
           </div>
-        </div>
+        </button>
       </div>
     </header>
   );

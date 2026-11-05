@@ -6,7 +6,8 @@
   "scripts": {
     "build": "rimraf dist && tsc",
     "start": "node dist/server.js",
-    "dev": "tsx watch src/server.ts"
+    "dev": "tsx watch src/server.ts",
+    "test": "tsx --test tests/**/*.test.ts"
   },
   "keywords": [
     "arthai",
@@ -18,10 +19,17 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/cookie-parser": "^1.4.10",
+    "@types/jsonwebtoken": "^9.0.10",
+    "bcryptjs": "^3.0.3",
+    "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
+    "express-rate-limit": "^8.7.3",
     "helmet": "^8.0.0",
+    "jsonwebtoken": "^9.0.3",
     "mongoose": "^8.10.1",
     "morgan": "^1.10.0"
   },
@@ -35,4 +43,3 @@
     "typescript": "^5.7.3"
   }
 }
-

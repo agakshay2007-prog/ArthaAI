@@ -12,9 +12,10 @@ import {
   X,
   ChevronLeft,
   ChevronRight,
-  ShieldCheck,
+  LogOut,
 } from 'lucide-react';
 import { NavigationTab } from '../../types/finance';
+import { useAuth } from '../../context/AuthContext';
 
 interface SidebarProps {
   currentTab: NavigationTab;
@@ -24,6 +25,7 @@ interface SidebarProps {
   isCollapsedDesktop: boolean;
   onToggleCollapseDesktop: () => void;
   onOpenSystemStatus: () => void;
+  onOpenProfile: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -34,7 +36,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
   isCollapsedDesktop,
   onToggleCollapseDesktop,
   onOpenSystemStatus,
+  onOpenProfile,
 }) => {
+  const { user, isGuestMode, logout } = useAuth();
+
+  const initials = user?.fullName
+    ? user.fullName
+        .split(' ')
+        .map((n) => n[0])
+        .join('')
+        .toUpperCase()
+        .slice(0, 2)
+    : 'U';
+
   const navItems = [
     { id: 'dashboard' as NavigationTab, label: 'Dashboard', icon: LayoutDashboard },
     { id: 'transactions' as NavigationTab, label: 'Transactions', icon: ReceiptText, badge: '10' },
@@ -171,25 +185,44 @@ export const Sidebar: React.FC<SidebarProps> = ({
             )}
           </button>
 
-          {/* User Profile Mini */}
+          {/* User Profile Mini & Logout Trigger */}
           {!isCollapsedDesktop ? (
             <div className="flex items-center justify-between p-2 rounded-xl bg-slate-800/30 border border-slate-800/50">
-              <div className="flex items-center space-x-2.5">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-brand-600 to-indigo-600 flex items-center justify-center text-xs font-bold text-white shadow">
-                  AM
+              <button
+                onClick={onOpenProfile}
+                className="flex items-center space-x-2.5 overflow-hidden text-left hover:opacity-80 transition cursor-pointer"
+                title="Open Profile & Account Settings"
+              >
+                <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-brand-600 to-indigo-600 flex items-center justify-center text-xs font-bold text-white shadow shrink-0">
+                  {initials}
                 </div>
                 <div className="overflow-hidden">
-                  <div className="text-xs font-semibold text-white truncate">Alex Morgan</div>
-                  <div className="text-[10px] text-slate-400 truncate">alex.morgan@artha.ai</div>
+                  <div className="text-xs font-semibold text-white truncate">
+                    {user?.fullName || 'User'}
+                  </div>
+                  <div className="text-[10px] text-slate-400 truncate">
+                    {user?.email || (isGuestMode ? 'alex.morgan@artha.ai' : '')}
+                  </div>
                 </div>
-              </div>
-              <ShieldCheck className="w-4 h-4 text-brand-400" />
+              </button>
+
+              <button
+                onClick={() => logout()}
+                className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-slate-800 rounded-lg transition"
+                title={isGuestMode ? 'Exit Demo Session' : 'Sign Out'}
+              >
+                <LogOut className="w-3.5 h-3.5" />
+              </button>
             </div>
           ) : (
-            <div className="flex justify-center">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-brand-600 to-indigo-600 flex items-center justify-center text-xs font-bold text-white shadow">
-                AM
-              </div>
+            <div className="flex flex-col items-center space-y-2">
+              <button
+                onClick={onOpenProfile}
+                className="w-8 h-8 rounded-full bg-gradient-to-tr from-brand-600 to-indigo-600 flex items-center justify-center text-xs font-bold text-white shadow cursor-pointer hover:ring-2 hover:ring-brand-400 transition"
+                title="Account Settings"
+              >
+                {initials}
+              </button>
             </div>
           )}
         </div>
@@ -197,4 +230,3 @@ export const Sidebar: React.FC<SidebarProps> = ({
     </>
   );
 };
-

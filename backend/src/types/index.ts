@@ -45,3 +45,20 @@ export interface ReadinessData {
   };
   timestamp: string;
 }
+
+export interface UserResponse {
+  id: string;
+  fullName: string;
+  email: string;
+  phoneNumber?: string;
+  profileImageUrl?: string;
+  accountStatus: 'active' | 'suspended' | 'deactivated';
+  isEmailVerified: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AuthSuccessData {
+  user: UserResponse;
+  token?: string;
+}
