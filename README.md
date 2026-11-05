@@ -9,6 +9,7 @@ ArthaAI is an enterprise-grade full-stack personal finance and autonomous intell
 - **Phase 6: Complete Savings Goals & Financial Planning Engine**
 - **Phase 7: Bills, Payments & Recurring Expenses Management Engine**
 - **Phase 8: AI Financial Assistant & Gemini Intelligence Engine**
+- **Phase 9: Comprehensive Reports, Analytics & Financial Export Engine**
 
 ---
 
@@ -29,6 +30,7 @@ ArthaAI/
 │   │   │   ├── bill.controller.ts  # Bills CRUD, payments, reminders & analytics
 │   │   │   ├── budget.controller.ts# Budget CRUD, overview, history & velocity analytics
 │   │   │   ├── health.controller.ts# Liveness, readiness, and diagnostics probes
+│   │   │   ├── report.controller.ts# Monthly, quarterly, annual, custom reports & exports
 │   │   │   ├── savings.controller.ts # Savings goals CRUD, contributions & analytics
 │   │   │   └── transaction.controller.ts # Transaction CRUD, pagination, filters & summary
 │   │   ├── middleware/             # Express middlewares
@@ -52,6 +54,7 @@ ArthaAI/
 │   │   │   ├── budget.route.ts     # /api/budgets budget endpoints
 │   │   │   ├── health.route.ts     # /api/health probes & telemetry
 │   │   │   ├── index.ts            # Central API route gateway
+│   │   │   ├── report.route.ts     # /api/reports financial statements & export endpoints
 │   │   │   ├── savings.route.ts    # /api/savings-goals endpoints
 │   │   │   └── transaction.route.ts# /api/transactions financial ledger endpoints
 │   │   ├── services/               # Core computational services
@@ -60,6 +63,11 @@ ArthaAI/
 │   │   │   │   ├── financial-insights.service.ts# Deterministic calculation of health score & metrics
 │   │   │   │   ├── gemini.service.ts            # Official Google Gen AI SDK client & error sanitizer
 │   │   │   │   └── prompt-builder.service.ts    # System instructions, guardrails & injection defense
+│   │   │   ├── reports/            # Financial reporting & export aggregation engine
+│   │   │   │   ├── report.service.ts            # Monthly, quarterly, annual, custom report orchestration
+│   │   │   │   ├── report-aggregation.service.ts# Multi-module integer minor unit financial rollup
+│   │   │   │   ├── report-comparison.service.ts # Period-over-period delta & percentage variance
+│   │   │   │   └── report-export.service.ts     # Multi-format generator (PDFKit, ExcelJS, CSV)
 │   │   │   ├── bill.service.ts     # Recurrence schedules, reminders & payment ledger
 │   │   │   ├── budget.service.ts   # Dynamic transaction aggregation, thresholds & forecasting
 │   │   │   └── savings.service.ts  # Goal enrichment, milestones, velocity & recommendations
@@ -71,14 +79,16 @@ ArthaAI/
 │   │   │   ├── asyncHandler.ts     # Async Promise-exception wrapper
 │   │   │   └── token.ts            # JWT signing, verification & cookie management
 │   │   ├── validators/             # Request payload validators
-│   │   │   └── ai.validator.ts     # Chat message & pagination validation
+│   │   │   ├── ai.validator.ts     # Chat message & pagination validation
+│   │   │   └── report.validator.ts # Report date range & period validation
 │   │   ├── app.ts                  # Express application setup, security stack & cookies
 │   │   └── server.ts               # HTTP server bootstrap & graceful shutdown hooks
-│   ├── tests/                      # Automated test suites (138 tests passing)
+│   ├── tests/                      # Automated test suites (176 tests passing)
 │   │   ├── ai.test.ts              # 29 automated tests covering Gemini mocks, health math & routes
 │   │   ├── auth.test.ts            # 16 automated tests covering auth, JWT, bcrypt & DB degradation
 │   │   ├── bills.test.ts           # 31 automated tests covering recurrence math, payments & routes
 │   │   ├── budgets.test.ts         # 21 automated tests covering budget models, math & routes
+│   │   ├── reports.test.ts         # 38 automated tests covering aggregation, exports & AI insights
 │   │   ├── savings-goals.test.ts   # 23 automated tests covering savings models, milestones & routes
 │   │   └── transactions.test.ts    # 18 automated tests covering CRUD, minor units, isolation & math
 │   ├── .env.example                # Sanitized backend environment template
@@ -128,6 +138,16 @@ ArthaAI/
 │   │   │   │   ├── EditTransactionModal.tsx # Edit transaction details & amount
 │   │   │   │   ├── DeleteTransactionModal.tsx # Confirm permanent deletion
 │   │   │   │   └── SystemStatusModal.tsx # Live full-stack architecture probe
+│   │   │   ├── reports/            # Phase 9 Comprehensive Financial Reporting Components
+│   │   │   │   ├── AIReportInsights.tsx # Gemini AI executive synthesis with refresh capability
+│   │   │   │   ├── BillsObligationsCard.tsx # Recurring liabilities and commitments breakdown
+│   │   │   │   ├── BudgetPerformanceChart.tsx # Budget variance and adherence progress bars
+│   │   │   │   ├── CashFlowChart.tsx # Recharts bar chart comparing inflow, outflow & net surplus
+│   │   │   │   ├── CategoryBreakdownChart.tsx # Recharts donut chart with category variance badges
+│   │   │   │   ├── DateRangeSelector.tsx # Presets (Monthly, Quarterly, Annual, Custom) & date pickers
+│   │   │   │   ├── ExportReportMenu.tsx # PDF statement, Excel workbook (.xlsx) & CSV export triggers
+│   │   │   │   ├── PeriodComparison.tsx # Delta & percentage variance benchmark cards
+│   │   │   │   └── ReportOverviewCards.tsx # 6 KPI cards (Inflow, Outflow, Net, Savings Rate, etc.)
 │   │   │   ├── savings/            # Phase 6 Savings Goals & Financial Planning Components
 │   │   │   │   ├── AddContributionModal.tsx # Deposit/withdrawal modal with real-time balance simulation
 │   │   │   │   ├── AddSavingsGoalModal.tsx # Create goal form with category, deadline & color/icon picker
@@ -148,12 +168,14 @@ ArthaAI/
 │   │   ├── context/                # React state context
 │   │   │   └── AuthContext.tsx     # Global authentication provider with guest mode
 │   │   ├── data/                   # Identified frontend demo data
-│   │   │   └── mockFinanceData.ts  # Demo transactions, budgets, savings goals & bills
+│   │   │   ├── mockFinanceData.ts  # Demo transactions, budgets, savings goals & bills
+│   │   │   └── mockReportsData.ts  # Demo reports for monthly, quarterly, annual & custom filters
 │   │   ├── services/               # API clients
 │   │   │   ├── api.ts              # Health & telemetry service
 │   │   │   ├── auth.ts             # Auth REST API service with HttpOnly credentials
 │   │   │   ├── bills.ts            # Bills REST API service with payments & analytics
 │   │   │   ├── budgets.ts          # Budget REST API service with full CRUD & analytics
+│   │   │   ├── reports.ts          # Reports & multi-format export API service (PDF, Excel, CSV)
 │   │   │   ├── savings.ts          # Savings goals REST API service with contributions & analytics
 │   │   │   └── transactions.ts     # Persistent financial transaction API service
 │   │   ├── types/                  # Frontend TypeScript definitions
@@ -162,6 +184,7 @@ ArthaAI/
 │   │   │   ├── budget.ts           # Phase 5 Budget models, analytics & alert interfaces
 │   │   │   ├── finance.ts          # Financial models & filter definitions
 │   │   │   ├── index.ts            # System health interfaces
+│   │   │   ├── reports.ts          # Phase 9 Report models, comparisons & export interfaces
 │   │   │   └── savings.ts          # Phase 6 Savings goals, contributions & planning interfaces
 │   │   ├── App.tsx                 # Root application with live ledger, budget, savings & bills state
 │   │   ├── index.css               # Tailwind CSS theme & glassmorphic utilities
@@ -375,6 +398,7 @@ The test suite validates:
 - **Savings Goals (23 tests)**: Goal schema validation, integer minor units conversion, negative target rejection, date ordering, sub-ledger contributions, goal enrichment, milestone calculations, unauthenticated 401s, unconfigured MongoDB 503s.
 - **Bills & Recurring Payments (31 tests)**: Bill schema validation, integer minor units, recurrence schedule calculations (weekly, monthly, quarterly, yearly, Jan 31 month-end clamp, leap-year Feb 29 clamp), payment ledger, reminder engine (overdue, due today, 1d, 3d, 7d), unauthenticated 401s, unconfigured MongoDB 503s.
 - **AI Financial Assistant & Gemini Engine (29 tests)**: AI conversation schema validation, role & message length boundaries, deterministic financial health index (0-100), transparent scoring breakdown, prompt injection sanitization, read-only safety guardrails, Gemini SDK error sanitization (timeouts, 429 rate limits, 404 models), 401 unauthenticated guards, 503 unconfigured DB degradation, and conversation ownership security.
+- **Financial Reports & Analytics (38 tests)**: Period-over-period delta & percentage comparisons, safe zero-previous baseline handling, validator constraints (3-year cap, start <= end, valid quarters/months), RFC 4180 CSV formula injection defense (`=`, `+`, `-`, `@`, `\t`, `\r` escaped with single quote `'`), multi-sheet Excel generation (`exceljs`), PDF statement generation (`pdfkit`), Gemini AI report insights with mock fallback, 401 unauthenticated guards, and 503 DB degradation.
 
 ### 2. Google Gemini API Setup & Configuration
 To enable live AI assistant responses with Google's official Gemini API:
@@ -403,13 +427,46 @@ To enable live AI assistant responses with Google's official Gemini API:
 
 ---
 
-### 4. Production Build Verification
+### 4. Financial Reports & Export Engine
+The ArthaAI Reporting Engine delivers deterministic financial consolidation, multi-module rollups, and multi-format statements:
+- **Periodic Rollups**: Monthly, quarterly (Q1-Q4), annual (calendar/fiscal), and custom date-range statements.
+- **Deterministic Minor-Unit Math**: Total income, total expenses, net cash flow, and savings rates aggregated strictly in integer minor units (cents/paise) to prevent IEEE 754 precision drift.
+- **Period-over-Period Variance**: Automatic benchmark calculation against prior equivalent periods with safe handling of zero-baseline scenarios.
+- **Mandatory Net Worth Policy**: Net worth is never fabricated from cash-flow ledgers. When unverified, the system displays the mandatory compliance disclosure: `"Net worth unavailable — additional asset and liability information is required."`
+- **Multi-Format Export Engine**:
+  - **PDF Statements**: Branded executive summary statements compiled dynamically via `pdfkit`.
+  - **Excel Workbooks (.xlsx)**: Multi-sheet workbooks (`Executive Summary`, `Category Breakdown`, `Budgets`, `Savings`, `Bills`, `Cash Flow`) compiled via `exceljs`.
+  - **CSV Exports**: RFC 4180 compliant datasets with UTF-8 BOM encoding.
+  - **Formula Injection Defense**: All exported string cells starting with `=`, `+`, `-`, `@`, `\t`, or `\r` are prepended with a single quote (`'`) to neutralize CSV/Excel DDE attacks.
+- **Gemini AI Report Insights**: Automated executive commentary, spending anomalies, and strategic budget recommendations generated on-demand via Google's Gemini models with graceful offline synthesis.
+
+#### Reports Endpoints Table
+| Method | Endpoint | Description | Auth Required |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/api/reports/overview` | Quick financial health summary for current calendar month | Yes |
+| `GET` | `/api/reports/monthly` | Full monthly statement with prior month comparison (`?year=&month=`) | Yes |
+| `GET` | `/api/reports/quarterly` | Full quarterly statement with prior quarter comparison (`?year=&quarter=`) | Yes |
+| `GET` | `/api/reports/annual` | Full annual statement with prior fiscal year comparison (`?year=`) | Yes |
+| `GET` | `/api/reports/custom` | Custom date-range statement (`?startDate=&endDate=`, max 3 years) | Yes |
+| `GET` | `/api/reports/categories` | Expense breakdown by category with variance deltas | Yes |
+| `GET` | `/api/reports/cash-flow` | Chronological cash-flow timeline points | Yes |
+| `GET` | `/api/reports/budget-performance` | Budget variance, adherence, and overspend metrics | Yes |
+| `GET` | `/api/reports/savings-performance` | Savings goals trajectory and period contribution totals | Yes |
+| `GET` | `/api/reports/bills-analysis` | Recurring payment commitments and overdue obligations | Yes |
+| `POST`| `/api/reports/ai-insights` | Gemini executive report commentary & recommendations | Yes |
+| `GET` | `/api/reports/export/pdf` | Stream binary PDF financial statement | Yes |
+| `GET` | `/api/reports/export/excel`| Stream binary multi-sheet Excel (.xlsx) workbook | Yes |
+| `GET` | `/api/reports/export/csv` | Download RFC 4180 CSV export with formula injection defense | Yes |
+
+---
+
+### 5. Production Build Verification
 ```bash
 npm run build
 ```
 Compiles both backend TypeScript (`tsc`) and frontend bundle (`vite build`).
 
-### 3. Development Server
+### 6. Development Server
 ```bash
 # Terminal 1: Backend API (http://localhost:5000)
 npm run dev:backend
@@ -423,9 +480,13 @@ npm run dev:frontend
 ## 🛡️ Security Audit Checklist
 - [x] Every financial record strictly associates with authenticated `userId`.
 - [x] `userId` from request body is strictly discarded in favor of verified session context.
-- [x] Integer minor units prevent IEEE 754 financial calculation drift across transactions, budgets, savings goals, and bills.
+- [x] Integer minor units prevent IEEE 754 financial calculation drift across transactions, budgets, savings goals, bills, and reports.
 - [x] Zero-amount and negative-amount limits rejected at model & controller levels.
 - [x] Cross-user access blocked via compound database ownership queries.
+- [x] Formula injection defense sanitizes all CSV and Excel cells (`=`, `+`, `-`, `@`, `\t`, `\r` escaped with single quote `'`) to prevent spreadsheet remote code execution.
+- [x] RFC 4180 CSV compliance guaranteed with standard UTF-8 BOM encoding for international currency display.
+- [x] Net worth disclosure strictly adheres to compliance: never fabricates balance sheet metrics without verified asset/liability ledgers.
+- [x] All 14 report endpoints strictly scope database queries to authenticated `userId` context.
 - [x] Deleting or archiving a bill leaves historical financial bank transaction records completely intact.
 - [x] Duplicate linking of transactions to multiple bill payments is rejected via unique indexing and ownership checks.
 - [x] Sub-ledger payments maintain historical chronological integrity with safe deletion & rollback.
@@ -435,6 +496,5 @@ npm run dev:frontend
 - [x] Clearing AI conversations strictly deletes chat history documents and never touches financial transactions, budgets, or bills.
 - [x] Sensitive authentication and AI chat routes protected by IP rate limiters.
 - [x] HttpOnly, SameSite cookies prevent credential access from browser JavaScript.
-- [x] CSV export generated safely from authorized records only.
-- [x] 100% test pass rate across 138 automated unit and integration tests.
+- [x] 100% test pass rate across 176 automated unit and integration tests (18 test suites).
 - [x] Zero secrets, tokens, or credentials stored in repository or frontend code.

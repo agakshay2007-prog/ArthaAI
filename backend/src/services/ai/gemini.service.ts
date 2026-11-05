@@ -21,10 +21,12 @@ export class GeminiService {
   private static clientInstance: GoogleGenAI | null = null;
 
   /**
-   * Check if Gemini API is configured in the environment
+   * Check if Gemini API is configured in the environment (or has an injected test client)
    */
   public static isConfigured(): boolean {
-    return Boolean(env.GEMINI_API_KEY && env.GEMINI_API_KEY.trim().length > 0);
+    return Boolean(
+      this.clientInstance || (env.GEMINI_API_KEY && env.GEMINI_API_KEY.trim().length > 0)
+    );
   }
 
   /**

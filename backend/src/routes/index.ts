@@ -6,6 +6,7 @@ import budgetRouter from './budget.route.js';
 import savingsRouter from './savings.route.js';
 import billRouter from './bill.route.js';
 import aiRouter from './ai.route.js';
+import reportRouter from './report.route.js';
 
 const router = Router();
 
@@ -80,6 +81,22 @@ router.get('/', (_req: Request, res: Response) => {
         getConversation: 'GET /api/ai/conversations/:id',
         deleteConversation: 'DELETE /api/ai/conversations/:id',
       },
+      reports: {
+        overview: 'GET /api/reports/overview',
+        monthly: 'GET /api/reports/monthly',
+        quarterly: 'GET /api/reports/quarterly',
+        annual: 'GET /api/reports/annual',
+        custom: 'GET /api/reports/custom',
+        categories: 'GET /api/reports/categories',
+        cashFlow: 'GET /api/reports/cash-flow',
+        budgets: 'GET /api/reports/budgets',
+        savings: 'GET /api/reports/savings',
+        bills: 'GET /api/reports/bills',
+        aiInsights: 'POST /api/reports/ai-insights',
+        exportPdf: 'GET /api/reports/export/pdf',
+        exportExcel: 'GET /api/reports/export/excel',
+        exportCsv: 'GET /api/reports/export/csv',
+      },
     },
   });
 });
@@ -92,5 +109,6 @@ router.use('/budgets', budgetRouter);
 router.use('/savings-goals', savingsRouter);
 router.use('/bills', billRouter);
 router.use('/ai', aiRouter);
+router.use('/reports', reportRouter);
 
 export default router;
