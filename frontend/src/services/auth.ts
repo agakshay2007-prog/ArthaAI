@@ -7,12 +7,11 @@ import {
   AuthResponse,
   AuthSuccessData,
 } from '../types/auth';
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
+import { buildApiUrl } from './apiConfig';
 
 class AuthService {
   private async request<T>(endpoint: string, options: RequestInit = {}): Promise<AuthResponse<T>> {
-    const url = `${API_BASE_URL}${endpoint}`;
+    const url = buildApiUrl(endpoint);
     const defaultHeaders: HeadersInit = {
       'Content-Type': 'application/json',
       Accept: 'application/json',

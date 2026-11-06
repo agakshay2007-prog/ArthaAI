@@ -7,8 +7,7 @@ import {
   UpdateBillInput,
   RecordPaymentInput,
 } from '../types/bill';
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
+import { buildApiUrl } from './apiConfig';
 
 interface ApiResponse<T> {
   success: boolean;
@@ -39,7 +38,7 @@ interface PaginatedPaymentsResult {
 
 class BillService {
   private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-    const url = `${API_BASE_URL}${endpoint}`;
+    const url = buildApiUrl(endpoint);
     const defaultHeaders: HeadersInit = {
       'Content-Type': 'application/json',
       Accept: 'application/json',

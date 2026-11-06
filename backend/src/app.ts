@@ -1,4 +1,4 @@
-import express, { Application, Request, Response } from 'express';
+import express, { Application, Request, Response, NextFunction } from 'express';
 import cors, { CorsOptions } from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
@@ -16,6 +16,31 @@ export const createApp = (): Application => {
 
   // Trust first proxy (Render, Cloudflare, load balancers) for accurate client IPs and cookies
   app.set('trust proxy', 1);
+
+  // 1. Path Normalization: collapse multiple consecutive slashes (e.g. '//api/auth/register' -> '/api/auth/register')
+  // while preserving query parameters and ensuring standard RFC URL resolution.
+  app.use((req: Request, _res: Response, next: NextFunction) => {
+    if (req.url && req.url.includes('//')) {
+      const queryIdx = req.url.indexOf('?');
+      if (queryIdx !== -1) {
+        req.url = req.url.substring(0, queryIdx).replace(/\/{2,}/g, '/') + req.url.substring(queryIdx);
+      } else {
+        req.url = req.url.replace(/\/{2,}/g, '/');
+      }
+    }
+    next();
+  });
+
+  // 2. Safe Diagnostic Route Logging: records method, path, originalUrl and API prefix
+  // Strictly excludes credentials, cookies, tokens, request bodies or passwords.
+  if (env.NODE_ENV !== 'test') {
+    app.use((req: Request, _res: Response, next: NextFunction) => {
+      console.log(
+        `[Route Diagnostic] Method: ${req.method} | Path: ${req.path} | OriginalUrl: ${req.originalUrl} | ActiveUrl: ${req.url} | ConfiguredPrefix: ${env.API_PREFIX}`
+      );
+      next();
+    });
+  }
 
   // Security HTTP headers tailored for API services
   app.use(

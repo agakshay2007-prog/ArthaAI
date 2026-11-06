@@ -1,10 +1,9 @@
 import { ApiResponse, HealthData, HealthCheckResult, LivenessData, ReadinessData } from '../types';
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
+import { buildApiUrl } from './apiConfig';
 
 export const checkHealth = async (): Promise<HealthCheckResult> => {
   const startTime = performance.now();
-  const url = `${API_BASE_URL}/api/health`;
+  const url = buildApiUrl('/api/health');
 
   try {
     const response = await fetch(url, {
@@ -37,7 +36,7 @@ export const checkHealth = async (): Promise<HealthCheckResult> => {
 export const checkLiveness = async (): Promise<{ alive: boolean; latencyMs: number; error: string | null }> => {
   const start = performance.now();
   try {
-    const res = await fetch(`${API_BASE_URL}/api/health/live`);
+    const res = await fetch(buildApiUrl('/api/health/live'));
     const latencyMs = Math.round(performance.now() - start);
     const json: ApiResponse<LivenessData> = await res.json();
     return { alive: res.ok && json.success, latencyMs, error: null };
@@ -49,7 +48,7 @@ export const checkLiveness = async (): Promise<{ alive: boolean; latencyMs: numb
 export const checkReadiness = async (): Promise<{ ready: boolean; latencyMs: number; error: string | null }> => {
   const start = performance.now();
   try {
-    const res = await fetch(`${API_BASE_URL}/api/health/ready`);
+    const res = await fetch(buildApiUrl('/api/health/ready'));
     const latencyMs = Math.round(performance.now() - start);
     const json: ApiResponse<ReadinessData> = await res.json();
     return { ready: res.ok && json.data?.ready === true, latencyMs, error: res.ok ? null : json.message };
