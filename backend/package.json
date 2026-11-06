@@ -4,7 +4,7 @@
   "description": "ArthaAI Backend API with Express, TypeScript, and MongoDB Atlas foundation",
   "main": "dist/server.js",
   "scripts": {
-    "build": "rimraf dist && tsc",
+    "build": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\" && tsc",
     "start": "node dist/server.js",
     "dev": "tsx watch src/server.ts",
     "test": "tsx --test tests/**/*.test.ts"
@@ -42,7 +42,6 @@
     "@types/morgan": "^1.9.9",
     "@types/node": "^22.13.4",
     "@types/pdfkit": "^0.17.7",
-    "rimraf": "^6.0.1",
     "tsx": "^4.19.3",
     "typescript": "^5.7.3"
   }
