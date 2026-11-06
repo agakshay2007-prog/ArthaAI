@@ -92,6 +92,15 @@ const parseTemperature = (tempStr?: string): number => {
   return parsed;
 };
 
+const parseApiPrefix = (prefix?: string): string => {
+  if (!prefix || !prefix.trim() || prefix.trim() === '/') {
+    return '/api';
+  }
+  const trimmed = prefix.trim();
+  const withLeading = trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
+  return withLeading.replace(/\/+$/, '') || '/api';
+};
+
 const rawClientOrigin = process.env.CLIENT_ORIGIN || 'http://localhost:5173';
 const allowedOrigins = rawClientOrigin
   .split(',')
@@ -106,7 +115,7 @@ export const env: AppConfig = {
   MONGODB_URI: parseMongoUri(process.env.MONGODB_URI || process.env.DATABASE_URL),
   CLIENT_ORIGIN: rawClientOrigin,
   ALLOWED_ORIGINS: allowedOrigins.length > 0 ? allowedOrigins : ['http://localhost:5173'],
-  API_PREFIX: process.env.API_PREFIX || '/api',
+  API_PREFIX: parseApiPrefix(process.env.API_PREFIX),
   BODY_LIMIT: '1mb',
   JWT_SECRET: parseJwtSecret(process.env.JWT_SECRET, currentEnv),
   JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || '7d',

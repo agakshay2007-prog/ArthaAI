@@ -10,6 +10,7 @@
     "build:frontend": "npm --prefix frontend run build",
     "dev:backend": "npm --prefix backend run dev",
     "dev:frontend": "npm --prefix frontend run dev",
+    "start": "node backend/dist/server.js",
     "start:backend": "npm --prefix backend run start",
     "test:backend": "npm --prefix backend test",
     "test": "npm --prefix backend test"

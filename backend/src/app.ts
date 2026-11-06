@@ -5,12 +5,17 @@ import morgan from 'morgan';
 import cookieParser from 'cookie-parser';
 import { env } from './config/env.js';
 import apiRouter from './routes/index.js';
+import authRouter from './routes/auth.route.js';
+import healthRouter from './routes/health.route.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { notFoundHandler } from './middleware/notFoundHandler.js';
 import { AppError } from './utils/apiError.js';
 
 export const createApp = (): Application => {
   const app = express();
+
+  // Trust first proxy (Render, Cloudflare, load balancers) for accurate client IPs and cookies
+  app.set('trust proxy', 1);
 
   // Security HTTP headers tailored for API services
   app.use(
@@ -70,8 +75,17 @@ export const createApp = (): Application => {
     res.redirect(`${env.API_PREFIX}/health/ready`);
   });
 
-  // Mount central API router
+  // Mount central API router under configured API_PREFIX (default: /api)
   app.use(env.API_PREFIX, apiRouter);
+
+  // Resilient fallback mounting: ensure /api is ALWAYS mounted even if API_PREFIX differs or is overridden
+  if (env.API_PREFIX !== '/api') {
+    app.use('/api', apiRouter);
+  }
+
+  // Defensive route mounting: allow direct /auth and /health paths
+  app.use('/auth', authRouter);
+  app.use('/health', healthRouter);
 
   // 404 Handler
   app.use(notFoundHandler);
